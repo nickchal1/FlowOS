@@ -14,10 +14,10 @@ import { saveCapsule, listCapsules, getCapsule, deleteCapsule, type CapsuleVscod
 import { createFocusScoreService, type FocusScoreService } from "./services/focusScoreService.js";
 import { createSpiralDetectorService, type SpiralDetectorService } from "./services/spiralDetectorService.js";
 import { categorizeApp } from "./services/workStyleAnalyzer.js";
-import { getFrictionLeaderboard } from "./services/frictionStore.js";
+import { getFrictionLeaderboard, recordAppActivation } from "./services/frictionStore.js";
 import { createPrepModeService, type PrepModeService } from "./services/prepModeService.js";
-import { getTodayEvents, getTomorrowEvents } from "./services/calendarService.js";
-import { getEnergyCurve, recordHourlyCommand } from "./services/energyCurveService.js";
+import { getTodayEvents } from "./services/calendarService.js";
+import { getEnergyCurve, recordHourlyCommand, recordHourlySwitch } from "./services/energyCurveService.js";
 import { createNightBeforeService, type NightBeforeService } from "./services/nightBeforeService.js";
 import {
   demoSuggestions,
@@ -228,26 +228,17 @@ async function bootstrap() {
     if (event.event === "app.activated") {
       const bundleId = (event.payload as { app?: { bundleId?: string } }).app?.bundleId ?? "";
       const appName  = (event.payload as { app?: { name?: string } }).app?.name ?? "";
+      const effectiveId = bundleId || appName; // guard against empty primary key
       focusScoreService?.recordSwitch(bundleId);
-      spiralDetector?.recordSwitch(bundleId, categorizeApp(bundleId));
-      if (db) {
+      // Spiral detection only fires during active tracking sessions
+      if (trackingSession.getState().isTracking) {
+        spiralDetector?.recordSwitch(bundleId, categorizeApp(bundleId));
+      }
+      if (db && effectiveId) {
         const currentScore = focusScoreService?.getScore() ?? 50;
-        db.prepare(`
-          INSERT INTO app_behavior (bundle_id, total_activations, low_focus_activations, last_seen, last_focus_score)
-          VALUES (?, 1, ?, ?, ?)
-          ON CONFLICT(bundle_id) DO UPDATE SET
-            total_activations     = total_activations + 1,
-            low_focus_activations = low_focus_activations + excluded.low_focus_activations,
-            last_seen             = excluded.last_seen,
-            last_focus_score      = excluded.last_focus_score
-        `).run(bundleId || appName, currentScore < 50 ? 1 : 0, new Date().toISOString(), currentScore);
-        const date = new Date().toISOString().slice(0, 10);
-        const hour = new Date().getHours();
-        db.prepare(`
-          INSERT INTO hourly_activity (date, hour, switch_count, focus_secs, commands_run)
-          VALUES (?, ?, 1, 0, 0)
-          ON CONFLICT(date, hour) DO UPDATE SET switch_count = switch_count + 1
-        `).run(date, hour);
+        // Use service functions to keep threshold logic in one place
+        recordAppActivation(db, effectiveId, currentScore);
+        recordHourlySwitch(db);
       }
       if (trackingSession.getState().isTracking) {
         triggerService?.onAppActivated(bundleId, trackingSession.getState().recentEvents);
@@ -574,6 +565,7 @@ async function bootstrap() {
     }>;
     let streak = 0;
     for (const r of recent) {
+      if (r.completed === null) continue;
       if (r.completed === 1) streak++;
       else break;
     }

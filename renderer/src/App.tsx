@@ -160,6 +160,18 @@ declare global {
   }
 }
 
+type NightBeforeResult = {
+  tomorrowEvents: Array<{ title: string; startAt: string }>;
+  schedule: Array<{ time: string; title: string; details: string; type: "meeting" | "deep_work" | "shallow" | "break" }>;
+  generatedAt: string;
+};
+
+function isNightBeforeResult(v: unknown): v is NightBeforeResult {
+  if (!v || typeof v !== "object") return false;
+  const r = v as Record<string, unknown>;
+  return Array.isArray(r["tomorrowEvents"]) && Array.isArray(r["schedule"]) && typeof r["generatedAt"] === "string";
+}
+
 const fallbackBootstrap: BootstrapState = {
   websocketPort: 7331,
   swiftHelper: {
@@ -197,11 +209,8 @@ export function App() {
   const [commitmentMode, setCommitmentMode] = useState<"goal" | "resolve" | null>(null);
   const [activeCommitmentId, setActiveCommitmentId] = useState<string | null>(null);
   const [activeGoalText, setActiveGoalText] = useState<string | null>(null);
-  const [nightBeforeResult, setNightBeforeResult] = useState<{
-    tomorrowEvents: Array<{ title: string; startAt: string }>;
-    schedule: Array<{ time: string; title: string; details: string; type: "meeting" | "deep_work" | "shallow" | "break" }>;
-    generatedAt: string;
-  } | null>(null);
+  const [isPlanning, setIsPlanning] = useState(false);
+  const [nightBeforeResult, setNightBeforeResult] = useState<NightBeforeResult | null>(null);
 
   useEffect(() => {
     const unsub = window.flowos?.onTriggerSuggestion((s) => setTriggerSuggestion(s));
@@ -230,7 +239,7 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    const unsub = window.flowos?.onNightBeforeReady((result) => setNightBeforeResult(result as typeof nightBeforeResult));
+    const unsub = window.flowos?.onNightBeforeReady((result) => { if (isNightBeforeResult(result)) setNightBeforeResult(result); });
     return () => { unsub?.(); };
   }, []);
 
@@ -689,12 +698,15 @@ export function App() {
         </button>
         <button
           type="button"
-          onClick={() => void window.flowos?.nightBeforeTrigger()}
-          disabled={isSubmitting}
+          onClick={async () => {
+            setIsPlanning(true);
+            try { await window.flowos?.nightBeforeTrigger(); } finally { setIsPlanning(false); }
+          }}
+          disabled={isSubmitting || isPlanning}
           className="mt-1.5 flex w-full items-center justify-between rounded-xl bg-white/[0.05] px-3 py-2.5 text-left ring-1 ring-white/[0.08] transition-all hover:bg-white/[0.08] hover:ring-white/[0.12] disabled:cursor-not-allowed disabled:opacity-40"
         >
           <div>
-            <div className="text-[13px] font-medium">Plan Tomorrow</div>
+            <div className="text-[13px] font-medium">{isPlanning ? "Planning…" : "Plan Tomorrow"}</div>
             <div className="mt-0.5 text-[11px] text-white/35">AI schedules your day</div>
           </div>
           <div className="h-1.5 w-1.5 rounded-full bg-purple-400 opacity-60" />
