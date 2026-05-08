@@ -13,6 +13,7 @@ import { saveCapsule, listCapsules, getCapsule, deleteCapsule, type CapsuleVscod
 import { createFocusScoreService, type FocusScoreService } from "./services/focusScoreService.js";
 import { createSpiralDetectorService, type SpiralDetectorService } from "./services/spiralDetectorService.js";
 import { categorizeApp } from "./services/workStyleAnalyzer.js";
+import { getFrictionLeaderboard } from "./services/frictionStore.js";
 import {
   demoSuggestions,
   demoTaskState,
@@ -494,6 +495,11 @@ async function bootstrap() {
   ipcMain.handle(ipcChannels.licenseDeactivate, () => {
     if (!db) return;
     removeLicense(db);
+  });
+
+  ipcMain.handle(ipcChannels.frictionLeaderboard, () => {
+    if (!db) return [];
+    return getFrictionLeaderboard(db, 10);
   });
 
   ipcMain.handle(ipcChannels.spiralResolve, async (_event, action: "dismiss" | "close_distractors" | "locked") => {

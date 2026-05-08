@@ -6,6 +6,7 @@ import { LicensePanel } from "./components/LicensePanel";
 import { CapsulePanel } from "./components/CapsulePanel";
 import { FocusScoreBadge, FocusAlertToast } from "./components/FocusGuardian";
 import { SpiralModal } from "./components/SpiralModal";
+import { FrictionPanel } from "./components/FrictionPanel";
 
 type TrackingEventRecord = {
   timestamp: string;
@@ -500,6 +501,7 @@ export function App() {
             </div>
           )}
           <AnalyticsPanel />
+          <FrictionPanel />
         </div>
       )}
       {tab === "license" && (
