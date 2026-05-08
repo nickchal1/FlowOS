@@ -5,6 +5,7 @@ import { TriggerToast } from "./components/TriggerToast";
 import { LicensePanel } from "./components/LicensePanel";
 import { CapsulePanel } from "./components/CapsulePanel";
 import { FocusScoreBadge, FocusAlertToast } from "./components/FocusGuardian";
+import { SpiralModal } from "./components/SpiralModal";
 
 type TrackingEventRecord = {
   timestamp: string;
@@ -76,6 +77,11 @@ interface WeeklyRollup {
   avgDailyFocusMins: number;
 }
 
+interface SpiralEvent {
+  triggeredAt: string;
+  appSequence: string[];
+}
+
 interface License {
   key: string;
   email: string | null;
@@ -121,6 +127,19 @@ declare global {
       licenseActivate: (key: string) => Promise<unknown>;
       licenseDeactivate: () => Promise<void>;
       onTriggerSuggestion: (cb: (s: TriggerSuggestion) => void) => () => void;
+      spiralResolve: (action: "dismiss" | "close_distractors" | "locked") => Promise<void>;
+      onSpiralDetected: (cb: (event: SpiralEvent) => void) => () => void;
+      frictionLeaderboard: () => Promise<unknown[]>;
+      calendarToday: () => Promise<unknown[]>;
+      prepDismiss: () => Promise<void>;
+      onPrepActive: (cb: (data: unknown) => void) => () => void;
+      energyCurve: () => Promise<unknown[]>;
+      commitmentSave: (goalText: string) => Promise<string | null>;
+      commitmentResolve: (id: string, completed: boolean) => Promise<void>;
+      commitmentStats: () => Promise<unknown>;
+      nightBeforeTrigger: () => Promise<void>;
+      nightBeforeApprove: (planId: string) => Promise<void>;
+      onNightBeforeReady: (cb: (result: unknown) => void) => () => void;
       capsuleList: () => Promise<Capsule[]>;
       capsuleSave: (name: string) => Promise<Capsule>;
       capsuleRestore: (id: string) => Promise<{ ok: boolean; results: string[] }>;
@@ -163,6 +182,7 @@ export function App() {
   const [license, setLicense] = useState<License | null>(null);
   const [focusScore, setFocusScore] = useState<number | null>(null);
   const [focusAlert, setFocusAlert] = useState(false);
+  const [spiralEvent, setSpiralEvent] = useState<SpiralEvent | null>(null);
 
   useEffect(() => {
     const unsub = window.flowos?.onTriggerSuggestion((s) => setTriggerSuggestion(s));
@@ -178,6 +198,11 @@ export function App() {
   // Load license on startup so trigger toasts work immediately for Pro users
   useEffect(() => {
     window.flowos?.licenseGet().then((l) => setLicense(l)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const unsub = window.flowos?.onSpiralDetected((ev) => setSpiralEvent(ev as SpiralEvent));
+    return () => { unsub?.(); };
   }, []);
 
   useEffect(() => {
@@ -382,13 +407,31 @@ export function App() {
 
   return (
     <div
-      className="flex h-screen flex-col overflow-hidden bg-[#0c0c0e] text-white transition-all duration-200"
+      className="relative flex h-screen flex-col overflow-hidden bg-[#0c0c0e] text-white transition-all duration-200"
       style={{
         borderRadius: "14px",
         border: isListening ? "1px solid rgba(248,113,113,0.6)" : "1px solid rgba(255,255,255,0.08)",
         boxShadow: isListening ? "0 0 0 3px rgba(239,68,68,0.25), 0 0 20px rgba(239,68,68,0.15)" : "none"
       }}
     >
+      {/* ── Spiral Modal overlay ── */}
+      {spiralEvent && (
+        <SpiralModal
+          event={spiralEvent}
+          onDismiss={async () => {
+            await window.flowos?.spiralResolve("dismiss");
+            setSpiralEvent(null);
+          }}
+          onCloseDistractors={async () => {
+            await window.flowos?.spiralResolve("close_distractors");
+            setSpiralEvent(null);
+          }}
+          onLock={async () => {
+            await window.flowos?.spiralResolve("locked");
+            setSpiralEvent(null);
+          }}
+        />
+      )}
       {/* ── Header ── */}
       <div className="flex shrink-0 items-center justify-between px-4 pb-2 pt-4">
         <div className="flex items-center gap-2">
