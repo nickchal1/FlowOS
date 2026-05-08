@@ -35,9 +35,11 @@ export interface NativeHelperBridge {
   stop(): void;
 }
 
-export async function startSwiftHelperBridge(): Promise<NativeHelperBridge> {
-  const helperCommand = resolveHelperCommand();
-  const helperRoot = resolveHelperRoot();
+export async function startSwiftHelperBridge(options?: { packagedBinaryPath?: string }): Promise<NativeHelperBridge> {
+  const helperCommand = resolveHelperCommand(options?.packagedBinaryPath);
+  const helperRoot = options?.packagedBinaryPath
+    ? resolve(options.packagedBinaryPath, "..")
+    : resolveHelperRoot();
   const [command, ...args] = helperCommand;
   const child: ChildProcessWithoutNullStreams = spawn(command, args, {
     cwd: helperRoot,
@@ -177,9 +179,15 @@ export async function startSwiftHelperBridge(): Promise<NativeHelperBridge> {
   };
 }
 
-function resolveHelperCommand() {
+function resolveHelperCommand(packagedBinaryPath?: string) {
+  // Packaged app: use the bundled pre-built binary from Resources/bin/
+  if (packagedBinaryPath && existsSync(packagedBinaryPath)) {
+    return [packagedBinaryPath, "--stdio"] as [string, ...string[]];
+  }
+
   const helperRoots = resolveHelperRootCandidates();
   const builtBinaries = helperRoots.flatMap((helperRoot) => [
+    resolve(helperRoot, "bin", "flowos-window-helper"),
     resolve(helperRoot, ".build", "arm64-apple-macosx", "debug", "FlowStateHelper"),
     resolve(helperRoot, ".build", "debug", "FlowStateHelper")
   ]);

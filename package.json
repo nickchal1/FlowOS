@@ -1,7 +1,8 @@
 {
   "name": "flowos",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "main": "electron/dist/main.js",
   "workspaces": [
     "db",
     "electron",
@@ -19,13 +20,17 @@
     "native": "npm run build:swift-helper && npm run build --workspace @flowos/shared && npm run build --workspace @flowos/electron && npm run native --workspace @flowos/electron --",
     "rebuild-native": "electron-rebuild -f -w better-sqlite3",
     "build": "npm run build --workspace @flowos/db && npm run build --workspace @flowos/shared && npm run build --workspace @flowos/electron && npm run build --workspace @flowos/renderer && npm run build --workspace @flowos/extension-chrome",
-    "typecheck": "npm run build --workspace @flowos/db && npm run build --workspace @flowos/shared && npm run typecheck --workspace @flowos/electron && npm run typecheck --workspace @flowos/renderer && npm run typecheck --workspace @flowos/extension-chrome && npm run typecheck --workspace @flowos/shared && npm run typecheck --workspace @flowos/db"
+    "typecheck": "npm run build --workspace @flowos/db && npm run build --workspace @flowos/shared && npm run typecheck --workspace @flowos/electron && npm run typecheck --workspace @flowos/renderer && npm run typecheck --workspace @flowos/extension-chrome && npm run typecheck --workspace @flowos/shared && npm run typecheck --workspace @flowos/db",
+    "dist:mac": "npm run build && electron-builder --mac --config electron-builder.yml",
+    "dist:mac:arm64": "npm run build && electron-builder --mac --arm64 --config electron-builder.yml",
+    "dist:mac:x64": "npm run build && electron-builder --mac --x64 --config electron-builder.yml"
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.4",
     "@types/node": "^24.0.1",
     "concurrently": "^9.1.2",
     "electron": "^36.2.0",
+    "electron-builder": "^25.1.8",
     "typescript": "^5.8.3",
     "wait-on": "^8.0.3"
   }

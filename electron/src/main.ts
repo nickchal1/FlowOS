@@ -131,7 +131,10 @@ async function bootstrap() {
   });
 
   observationService = await startElectronObservationService({ trackingSession });
-  nativeHelperBridge = await startSwiftHelperBridge();
+  const packagedBinaryPath = app.isPackaged
+    ? join(process.resourcesPath, "bin", "flowos-window-helper")
+    : undefined;
+  nativeHelperBridge = await startSwiftHelperBridge({ packagedBinaryPath });
   swiftHelperStatus = nativeHelperBridge.getStatus();
 
   triggerService = createContextTriggerService({

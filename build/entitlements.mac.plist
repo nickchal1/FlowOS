@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Required for Electron's V8 JIT compiler under hardened runtime -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <!-- Required for Electron's code generation (WebAssembly, etc.) -->
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+  <!-- Required for osascript: Calendar access, window management -->
+  <key>com.apple.security.automation.apple-events</key>
+  <true/>
+  <!-- Required for voice commands via Whisper -->
+  <key>com.apple.security.device.microphone</key>
+  <true/>
+  <!-- Required for OpenAI API calls -->
+  <key>com.apple.security.network.client</key>
+  <true/>
+</dict>
+</plist>

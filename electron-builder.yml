@@ -1,0 +1,60 @@
+appId: app.flowos.desktop
+productName: FlowOS
+copyright: "Copyright © 2026 FlowOS"
+
+directories:
+  output: release
+
+# Do not use asar — keeps paths simple and avoids native-module extraction issues
+asar: false
+
+files:
+  - electron/dist/**/*
+  - renderer/dist/**/*
+  - db/dist/**/*
+  - shared/dist/**/*
+  - node_modules/**/*
+  - package.json
+  - "!**/*.ts"
+  - "!**/*.map"
+  - "!**/.DS_Store"
+  - "!node_modules/.cache/**/*"
+  - "!node_modules/electron/**/*"
+  - "!website/**/*"
+  - "!swift-helper/**/*"
+  - "!docs/**/*"
+
+# Swift helper binary goes into Resources/bin/ — accessible via process.resourcesPath
+extraResources:
+  - from: swift-helper/bin/flowos-window-helper
+    to: bin/flowos-window-helper
+
+# Rebuild native modules (better-sqlite3) against Electron's Node.js ABI
+npmRebuild: true
+
+mac:
+  category: public.app-category.productivity
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+  minimumSystemVersion: "13.0"
+  # Hardened runtime is required for notarization; entitlements allow JIT + mic + AppleScript
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  gatekeeperAssess: false
+
+dmg:
+  title: "FlowOS"
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 130
+      y: 190
+    - x: 410
+      y: 190
+      type: link
+      path: /Applications

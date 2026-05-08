@@ -11,3 +11,5 @@ coverage
 data/
 swift-helper/.build
 test.sh
+!build/entitlements.mac.plist
+!electron-builder.yml
