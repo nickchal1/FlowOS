@@ -18,6 +18,7 @@ import { getFrictionLeaderboard } from "./services/frictionStore.js";
 import { createPrepModeService, type PrepModeService } from "./services/prepModeService.js";
 import { getTodayEvents, getTomorrowEvents } from "./services/calendarService.js";
 import { getEnergyCurve, recordHourlyCommand } from "./services/energyCurveService.js";
+import { createNightBeforeService, type NightBeforeService } from "./services/nightBeforeService.js";
 import {
   demoSuggestions,
   demoTaskState,
@@ -85,6 +86,7 @@ let licenseActivationInProgress = false;
 let focusScoreService: FocusScoreService | null = null;
 let spiralDetector: SpiralDetectorService | null = null;
 let prepModeService: PrepModeService | null = null;
+let nightBeforeService: NightBeforeService | null = null;
 let lastFlowRun: FlowRunResult | null = null;
 let flowModeStatus: "idle" | "running" | "completed" | "failed" = "idle";
 const GLOBAL_MIC_SHORTCUT = "CommandOrControl+Shift+K";
@@ -191,6 +193,30 @@ async function bootstrap() {
     },
   });
   prepModeService.start();
+
+  nightBeforeService = createNightBeforeService({
+    apiKey: process.env["OPENAI_API_KEY"] ?? "",
+    model: process.env["OPENAI_MODEL"] ?? "gpt-4o-mini",
+    onScheduleReady: (result) => {
+      if (db) {
+        db.prepare(`
+          INSERT OR REPLACE INTO morning_plans (id, plan_date, events_json, schedule_json, approved, created_at)
+          VALUES (?, ?, ?, ?, 0, ?)
+        `).run(
+          randomUUID(),
+          new Date(result.generatedAt).toISOString().slice(0, 10),
+          JSON.stringify(result.tomorrowEvents),
+          JSON.stringify(result.schedule),
+          result.generatedAt
+        );
+      }
+      const win = BrowserWindow.getAllWindows()[0];
+      if (win && !win.isDestroyed()) {
+        win.webContents.send(ipcChannels.nightBeforeReady, result);
+      }
+    },
+  });
+  nightBeforeService.start();
 
   nativeHelperBridge.onEvent((event) => {
     if (event.event === "helper.ready") {
@@ -564,6 +590,19 @@ async function bootstrap() {
     return getTodayEvents();
   });
 
+  ipcMain.handle(ipcChannels.nightBeforeTrigger, async () => {
+    await nightBeforeService?.triggerNow();
+  });
+
+  ipcMain.handle(ipcChannels.nightBeforeApprove, (_event, planId: string) => {
+    if (!db) return;
+    if (planId === "latest") {
+      db.prepare("UPDATE morning_plans SET approved = 1 WHERE id = (SELECT id FROM morning_plans ORDER BY created_at DESC LIMIT 1)").run();
+    } else {
+      db.prepare("UPDATE morning_plans SET approved = 1 WHERE id = ?").run(planId);
+    }
+  });
+
   ipcMain.handle(ipcChannels.prepDismiss, () => {
     const win = BrowserWindow.getAllWindows()[0];
     if (win && !win.isDestroyed()) {
@@ -856,6 +895,8 @@ app.on("before-quit", () => {
   spiralDetector = null;
   prepModeService?.stop();
   prepModeService = null;
+  nightBeforeService?.stop();
+  nightBeforeService = null;
   globalShortcut.unregisterAll();
   menuBarTray?.destroy();
   menuBarTray = null;

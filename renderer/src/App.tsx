@@ -10,6 +10,7 @@ import { FrictionPanel } from "./components/FrictionPanel";
 import { PrepBanner } from "./components/PrepBanner";
 import { EnergyHeatmap } from "./components/EnergyHeatmap";
 import { CommitmentModal } from "./components/CommitmentModal";
+import { NightBeforePanel } from "./components/NightBeforePanel";
 
 type TrackingEventRecord = {
   timestamp: string;
@@ -196,6 +197,11 @@ export function App() {
   const [commitmentMode, setCommitmentMode] = useState<"goal" | "resolve" | null>(null);
   const [activeCommitmentId, setActiveCommitmentId] = useState<string | null>(null);
   const [activeGoalText, setActiveGoalText] = useState<string | null>(null);
+  const [nightBeforeResult, setNightBeforeResult] = useState<{
+    tomorrowEvents: Array<{ title: string; startAt: string }>;
+    schedule: Array<{ time: string; title: string; details: string; type: "meeting" | "deep_work" | "shallow" | "break" }>;
+    generatedAt: string;
+  } | null>(null);
 
   useEffect(() => {
     const unsub = window.flowos?.onTriggerSuggestion((s) => setTriggerSuggestion(s));
@@ -220,6 +226,11 @@ export function App() {
 
   useEffect(() => {
     const unsub = window.flowos?.onPrepActive((data) => setPrepData(data as PrepData | null));
+    return () => { unsub?.(); };
+  }, []);
+
+  useEffect(() => {
+    const unsub = window.flowos?.onNightBeforeReady((result) => setNightBeforeResult(result as typeof nightBeforeResult));
     return () => { unsub?.(); };
   }, []);
 
@@ -434,8 +445,20 @@ export function App() {
         boxShadow: isListening ? "0 0 0 3px rgba(239,68,68,0.25), 0 0 20px rgba(239,68,68,0.15)" : "none"
       }}
     >
+      {/* ── Night Before Panel ── */}
+      {nightBeforeResult && !spiralEvent && (
+        <NightBeforePanel
+          result={nightBeforeResult}
+          onApprove={async () => {
+            await window.flowos?.nightBeforeApprove("latest");
+            setNightBeforeResult(null);
+          }}
+          onDismiss={() => setNightBeforeResult(null)}
+        />
+      )}
+
       {/* ── Commitment Contract Modal ── */}
-      {commitmentMode && !spiralEvent && (
+      {commitmentMode && !spiralEvent && !nightBeforeResult && (
         <CommitmentModal
           mode={commitmentMode}
           goalText={activeGoalText ?? undefined}
@@ -663,6 +686,18 @@ export function App() {
             </div>
           </div>
           {bootstrap.tracking.isTracking && <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />}
+        </button>
+        <button
+          type="button"
+          onClick={() => void window.flowos?.nightBeforeTrigger()}
+          disabled={isSubmitting}
+          className="mt-1.5 flex w-full items-center justify-between rounded-xl bg-white/[0.05] px-3 py-2.5 text-left ring-1 ring-white/[0.08] transition-all hover:bg-white/[0.08] hover:ring-white/[0.12] disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <div>
+            <div className="text-[13px] font-medium">Plan Tomorrow</div>
+            <div className="mt-0.5 text-[11px] text-white/35">AI schedules your day</div>
+          </div>
+          <div className="h-1.5 w-1.5 rounded-full bg-purple-400 opacity-60" />
         </button>
       </div>
 
