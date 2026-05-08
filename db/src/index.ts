@@ -67,6 +67,48 @@ CREATE TABLE IF NOT EXISTS context_capsules (
   windows_json TEXT,
   created_at   TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS spiral_events (
+  id           TEXT PRIMARY KEY,
+  triggered_at TEXT NOT NULL,
+  app_sequence TEXT NOT NULL,
+  action_taken TEXT
+);
+
+CREATE TABLE IF NOT EXISTS app_behavior (
+  bundle_id             TEXT PRIMARY KEY,
+  total_activations     INTEGER NOT NULL DEFAULT 0,
+  low_focus_activations INTEGER NOT NULL DEFAULT 0,
+  last_seen             TEXT NOT NULL,
+  last_focus_score      REAL NOT NULL DEFAULT 50
+);
+
+CREATE TABLE IF NOT EXISTS hourly_activity (
+  date         TEXT NOT NULL,
+  hour         INTEGER NOT NULL,
+  switch_count INTEGER NOT NULL DEFAULT 0,
+  focus_secs   INTEGER NOT NULL DEFAULT 0,
+  commands_run INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (date, hour)
+);
+
+CREATE TABLE IF NOT EXISTS commitments (
+  id           TEXT PRIMARY KEY,
+  session_id   TEXT,
+  goal_text    TEXT NOT NULL,
+  completed    INTEGER,
+  created_at   TEXT NOT NULL,
+  resolved_at  TEXT
+);
+
+CREATE TABLE IF NOT EXISTS morning_plans (
+  id            TEXT PRIMARY KEY,
+  plan_date     TEXT NOT NULL,
+  events_json   TEXT NOT NULL,
+  schedule_json TEXT NOT NULL,
+  approved      INTEGER NOT NULL DEFAULT 0,
+  created_at    TEXT NOT NULL
+);
 `;
 
 export function ensureDatabase(dbPath = process.env.FLOWOS_DB_PATH ?? "./data/flowos.db") {
