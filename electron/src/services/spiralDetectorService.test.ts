@@ -7,7 +7,8 @@ const UNPRODUCTIVE = ["com.tinyspeck.slackmacgap", "com.spotify.client", "com.ap
 const PRODUCTIVE   = ["com.microsoft.VSCode", "com.apple.Terminal"];
 
 describe("createSpiralDetectorService", () => {
-  let onSpiral: ReturnType<typeof vi.fn>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let onSpiral: any;
 
   beforeEach(() => {
     vi.clearAllTimers();

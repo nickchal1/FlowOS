@@ -175,7 +175,7 @@ function decay(ageMs: number): number {
   return Math.exp((-ageMs * LN2) / HALF_LIFE_MS);
 }
 
-function categorizeApp(bundleId: string): AppCategory {
+export function categorizeApp(bundleId: string): AppCategory {
   const exact = CATEGORY_MAP[bundleId];
   if (exact) return exact;
 

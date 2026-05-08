@@ -38,7 +38,20 @@ const channels = {
   capsuleRestore: "capsule:restore",
   capsuleDelete: "capsule:delete",
   focusScore: "focus:score",
-  focusAlert: "focus:alert"
+  focusAlert: "focus:alert",
+  spiralDetected: "spiral:detected",
+  spiralResolve: "spiral:resolve",
+  frictionLeaderboard: "friction:leaderboard",
+  calendarToday: "calendar:today",
+  prepActive: "prep:active",
+  prepDismiss: "prep:dismiss",
+  energyCurve: "energy:curve",
+  commitmentSave: "commitment:save",
+  commitmentResolve: "commitment:resolve",
+  commitmentStats: "commitment:stats",
+  nightBeforeReady: "nightbefore:ready",
+  nightBeforeTrigger: "nightbefore:trigger",
+  nightBeforeApprove: "nightbefore:approve"
 } as const;
 
 try {
@@ -103,6 +116,37 @@ try {
       const wrapped = () => callback();
       ipcRenderer.on(channels.focusAlert, wrapped);
       return () => { ipcRenderer.removeListener(channels.focusAlert, wrapped); };
+    },
+    // Spiral Detection
+    spiralResolve: (action: string) => ipcRenderer.invoke(channels.spiralResolve, action),
+    onSpiralDetected: (callback: (event: unknown) => void) => {
+      const wrapped = (_e: Electron.IpcRendererEvent, ev: unknown) => callback(ev);
+      ipcRenderer.on(channels.spiralDetected, wrapped);
+      return () => { ipcRenderer.removeListener(channels.spiralDetected, wrapped); };
+    },
+    // Friction
+    frictionLeaderboard: () => ipcRenderer.invoke(channels.frictionLeaderboard),
+    // Calendar / Prep Mode
+    calendarToday: () => ipcRenderer.invoke(channels.calendarToday),
+    prepDismiss: () => ipcRenderer.invoke(channels.prepDismiss),
+    onPrepActive: (callback: (data: unknown) => void) => {
+      const wrapped = (_e: Electron.IpcRendererEvent, data: unknown) => callback(data);
+      ipcRenderer.on(channels.prepActive, wrapped);
+      return () => { ipcRenderer.removeListener(channels.prepActive, wrapped); };
+    },
+    // Energy Curve
+    energyCurve: () => ipcRenderer.invoke(channels.energyCurve),
+    // Commitment Contracts
+    commitmentSave: (goalText: string) => ipcRenderer.invoke(channels.commitmentSave, goalText),
+    commitmentResolve: (id: string, completed: boolean) => ipcRenderer.invoke(channels.commitmentResolve, id, completed),
+    commitmentStats: () => ipcRenderer.invoke(channels.commitmentStats),
+    // Night Before
+    nightBeforeTrigger: () => ipcRenderer.invoke(channels.nightBeforeTrigger),
+    nightBeforeApprove: (planId: string) => ipcRenderer.invoke(channels.nightBeforeApprove, planId),
+    onNightBeforeReady: (callback: (result: unknown) => void) => {
+      const wrapped = (_e: Electron.IpcRendererEvent, result: unknown) => callback(result);
+      ipcRenderer.on(channels.nightBeforeReady, wrapped);
+      return () => { ipcRenderer.removeListener(channels.nightBeforeReady, wrapped); };
     }
   });
 } catch (error) {

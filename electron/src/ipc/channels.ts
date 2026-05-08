@@ -24,5 +24,18 @@ export const ipcChannels = {
   capsuleRestore: "capsule:restore",
   capsuleDelete: "capsule:delete",
   focusScore: "focus:score",
-  focusAlert: "focus:alert"
+  focusAlert: "focus:alert",
+  spiralDetected: "spiral:detected",
+  spiralResolve: "spiral:resolve",
+  frictionLeaderboard: "friction:leaderboard",
+  calendarToday: "calendar:today",
+  prepActive: "prep:active",
+  prepDismiss: "prep:dismiss",
+  energyCurve: "energy:curve",
+  commitmentSave: "commitment:save",
+  commitmentResolve: "commitment:resolve",
+  commitmentStats: "commitment:stats",
+  nightBeforeReady: "nightbefore:ready",
+  nightBeforeTrigger: "nightbefore:trigger",
+  nightBeforeApprove: "nightbefore:approve"
 } as const;
