@@ -15,7 +15,8 @@ import { createSpiralDetectorService, type SpiralDetectorService } from "./servi
 import { categorizeApp } from "./services/workStyleAnalyzer.js";
 import { getFrictionLeaderboard } from "./services/frictionStore.js";
 import { createPrepModeService, type PrepModeService } from "./services/prepModeService.js";
-import { getTodayEvents } from "./services/calendarService.js";
+import { getTodayEvents, getTomorrowEvents } from "./services/calendarService.js";
+import { getEnergyCurve, recordHourlyCommand } from "./services/energyCurveService.js";
 import {
   demoSuggestions,
   demoTaskState,
@@ -401,6 +402,7 @@ async function bootstrap() {
     if (result.ok && db && activeSessionId) {
       recordFocusEvent(db, { sessionId: activeSessionId, kind: "command_run", app: null, payload: JSON.stringify({ transcript: transcript.slice(0, 100) }) });
       upsertDailyStat(db, new Date().toISOString().slice(0, 10), { totalFocusSecs: 0, codingSecs: 0, researchSecs: 0, commandsRun: 1, sessionsCount: 0 });
+      recordHourlyCommand(db);
     }
     return result;
   });
@@ -513,6 +515,11 @@ async function bootstrap() {
   ipcMain.handle(ipcChannels.frictionLeaderboard, () => {
     if (!db) return [];
     return getFrictionLeaderboard(db, 10);
+  });
+
+  ipcMain.handle(ipcChannels.energyCurve, () => {
+    if (!db) return [];
+    return getEnergyCurve(db, 14);
   });
 
   ipcMain.handle(ipcChannels.calendarToday, async () => {

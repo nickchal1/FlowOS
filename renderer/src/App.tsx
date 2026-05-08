@@ -8,6 +8,7 @@ import { FocusScoreBadge, FocusAlertToast } from "./components/FocusGuardian";
 import { SpiralModal } from "./components/SpiralModal";
 import { FrictionPanel } from "./components/FrictionPanel";
 import { PrepBanner } from "./components/PrepBanner";
+import { EnergyHeatmap } from "./components/EnergyHeatmap";
 
 type TrackingEventRecord = {
   timestamp: string;
@@ -529,6 +530,9 @@ export function App() {
             </div>
           )}
           <AnalyticsPanel />
+          <div className="mx-3 h-px bg-white/[0.06]" />
+          <EnergyHeatmap />
+          <div className="mx-3 h-px bg-white/[0.06]" />
           <FrictionPanel />
         </div>
       )}
