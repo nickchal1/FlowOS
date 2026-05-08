@@ -14,6 +14,8 @@ import { createFocusScoreService, type FocusScoreService } from "./services/focu
 import { createSpiralDetectorService, type SpiralDetectorService } from "./services/spiralDetectorService.js";
 import { categorizeApp } from "./services/workStyleAnalyzer.js";
 import { getFrictionLeaderboard } from "./services/frictionStore.js";
+import { createPrepModeService, type PrepModeService } from "./services/prepModeService.js";
+import { getTodayEvents } from "./services/calendarService.js";
 import {
   demoSuggestions,
   demoTaskState,
@@ -80,6 +82,7 @@ let triggerService: ContextTriggerService | null = null;
 let licenseActivationInProgress = false;
 let focusScoreService: FocusScoreService | null = null;
 let spiralDetector: SpiralDetectorService | null = null;
+let prepModeService: PrepModeService | null = null;
 let lastFlowRun: FlowRunResult | null = null;
 let flowModeStatus: "idle" | "running" | "completed" | "failed" = "idle";
 const GLOBAL_MIC_SHORTCUT = "CommandOrControl+Shift+K";
@@ -177,6 +180,16 @@ async function bootstrap() {
       }
     },
   });
+
+  prepModeService = createPrepModeService({
+    onPrepTriggered: (event, minsUntil) => {
+      const win = BrowserWindow.getAllWindows()[0];
+      if (win && !win.isDestroyed()) {
+        win.webContents.send(ipcChannels.prepActive, { event, minsUntil });
+      }
+    },
+  });
+  prepModeService.start();
 
   nativeHelperBridge.onEvent((event) => {
     if (event.event === "helper.ready") {
@@ -502,6 +515,17 @@ async function bootstrap() {
     return getFrictionLeaderboard(db, 10);
   });
 
+  ipcMain.handle(ipcChannels.calendarToday, async () => {
+    return getTodayEvents();
+  });
+
+  ipcMain.handle(ipcChannels.prepDismiss, () => {
+    const win = BrowserWindow.getAllWindows()[0];
+    if (win && !win.isDestroyed()) {
+      win.webContents.send(ipcChannels.prepActive, null);
+    }
+  });
+
   ipcMain.handle(ipcChannels.spiralResolve, async (_event, action: "dismiss" | "close_distractors" | "locked") => {
     if (db) {
       db.prepare(`
@@ -785,6 +809,8 @@ app.on("before-quit", () => {
   focusScoreService = null;
   spiralDetector?.dispose();
   spiralDetector = null;
+  prepModeService?.stop();
+  prepModeService = null;
   globalShortcut.unregisterAll();
   menuBarTray?.destroy();
   menuBarTray = null;

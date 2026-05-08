@@ -7,6 +7,7 @@ import { CapsulePanel } from "./components/CapsulePanel";
 import { FocusScoreBadge, FocusAlertToast } from "./components/FocusGuardian";
 import { SpiralModal } from "./components/SpiralModal";
 import { FrictionPanel } from "./components/FrictionPanel";
+import { PrepBanner } from "./components/PrepBanner";
 
 type TrackingEventRecord = {
   timestamp: string;
@@ -81,6 +82,11 @@ interface WeeklyRollup {
 interface SpiralEvent {
   triggeredAt: string;
   appSequence: string[];
+}
+
+interface PrepData {
+  event: { id: string; title: string; startAt: string; location: string | null };
+  minsUntil: number;
 }
 
 interface License {
@@ -184,6 +190,7 @@ export function App() {
   const [focusScore, setFocusScore] = useState<number | null>(null);
   const [focusAlert, setFocusAlert] = useState(false);
   const [spiralEvent, setSpiralEvent] = useState<SpiralEvent | null>(null);
+  const [prepData, setPrepData] = useState<PrepData | null>(null);
 
   useEffect(() => {
     const unsub = window.flowos?.onTriggerSuggestion((s) => setTriggerSuggestion(s));
@@ -203,6 +210,11 @@ export function App() {
 
   useEffect(() => {
     const unsub = window.flowos?.onSpiralDetected((ev) => setSpiralEvent(ev as SpiralEvent));
+    return () => { unsub?.(); };
+  }, []);
+
+  useEffect(() => {
+    const unsub = window.flowos?.onPrepActive((data) => setPrepData(data as PrepData | null));
     return () => { unsub?.(); };
   }, []);
 
@@ -461,6 +473,22 @@ export function App() {
           </button>
         ))}
       </div>
+
+      {/* ── Prep Mode banner ── */}
+      {prepData && !spiralEvent && (
+        <PrepBanner
+          event={prepData.event}
+          minsUntil={prepData.minsUntil}
+          onDismiss={() => {
+            void window.flowos?.prepDismiss();
+            setPrepData(null);
+          }}
+          onEnterFocus={() => {
+            void handleEnterFlowMode("coding");
+            setPrepData(null);
+          }}
+        />
+      )}
 
       {/* ── Focus alert toast ── */}
       {focusAlert && focusScore !== null && (
