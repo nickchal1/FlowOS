@@ -9,601 +9,1052 @@ const PRICE_ANNUAL  = 89;
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FlowOS — The AI Focus Copilot for Mac</title>
   <meta name="description" content="FlowOS lives in your menu bar, catches distraction spirals, plans your day from your calendar, and snaps you back into flow — before you've lost the hour." />
-  <meta property="og:title" content="FlowOS — The AI Focus Copilot for Mac" />
-  <meta property="og:description" content="The menu-bar AI that catches you before you drift." />
-  <meta property="og:type" content="website" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
-    * { box-sizing: border-box; }
-    body { background: #0a0a0c; color: #fff; font-family: "Inter", system-ui, sans-serif; margin: 0; overflow-x: hidden; }
-    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.65s ease, transform 0.65s ease; }
-    .reveal.visible { opacity: 1; transform: none; }
-    .reveal-delay-1 { transition-delay: 0.1s; }
-    .reveal-delay-2 { transition-delay: 0.2s; }
-    .reveal-delay-3 { transition-delay: 0.3s; }
-    .reveal-delay-4 { transition-delay: 0.4s; }
-    /* Glow gradients */
-    .hero-glow { background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.25) 0%, transparent 70%); }
-    .feature-glow-left { background: radial-gradient(ellipse 60% 80% at -10% 50%, rgba(99,102,241,0.15) 0%, transparent 60%); }
-    .feature-glow-right { background: radial-gradient(ellipse 60% 80% at 110% 50%, rgba(139,92,246,0.15) 0%, transparent 60%); }
-    /* Noise texture overlay */
-    body::before { content: ""; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"); pointer-events: none; z-index: 0; }
-    /* Float animation for mockup */
-    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-    .mockup-float { animation: float 5s ease-in-out infinite; }
+    *{box-sizing:border-box}
+    body{background:#0a0a0c;color:#fff;font-family:"Inter",system-ui,sans-serif;margin:0;overflow-x:hidden}
+    .mono{font-family:"JetBrains Mono",monospace}
+    /* Glow */
+    .hero-glow{background:radial-gradient(ellipse 80% 50% at 50% -5%,rgba(99,102,241,.22) 0%,transparent 70%)}
+    /* Noise */
+    body::before{content:"";position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
+    /* Popover */
+    .popover{background:#0c0c0e;border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;box-shadow:0 32px 64px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.04)}
     /* Gradient text */
-    .gradient-text { background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.6) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .gradient-text-indigo { background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 50%, #c084fc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    /* Grid line bg */
-    .grid-bg { background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 60px 60px; }
+    .gt{background:linear-gradient(135deg,#fff 0%,rgba(255,255,255,.55) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .gti{background:linear-gradient(135deg,#a5b4fc 0%,#818cf8 50%,#c084fc 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    /* Scroll reveal */
+    .reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+    .reveal.visible{opacity:1;transform:none}
+    .rd1{transition-delay:.1s}.rd2{transition-delay:.2s}.rd3{transition-delay:.3s}
     /* Separator */
-    .sep { height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0.06) 70%, transparent); }
-    /* Popover chrome */
-    .popover { background: #0c0c0e; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04); }
-    /* Pricing card hover */
-    .pricing-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-    .pricing-card:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(99,102,241,0.1); }
+    .sep{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06) 30%,rgba(255,255,255,.06) 70%,transparent)}
+    /* Float */
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    .float{animation:float 5s ease-in-out infinite}
+    /* Log entry typing */
+    @keyframes fadeIn{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:none}}
+    .log-entry{animation:fadeIn .25s ease forwards}
+    /* Popover state transition */
+    .popover-state{animation:fadeIn .3s ease forwards}
+    /* Progress bar */
+    @keyframes progress{from{width:0%}to{width:100%}}
+    .progress-bar{animation:progress linear forwards}
+    /* Cursor blink */
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+    .cursor{animation:blink .8s step-end infinite}
+    /* Mac menubar */
+    .menubar{background:rgba(0,0,0,.7);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+    /* Pricing hover */
+    .pc{transition:transform .2s,box-shadow .2s}
+    .pc:hover{transform:translateY(-4px);box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 40px rgba(99,102,241,.1)}
+    /* Timeline line */
+    .tl-line{background:linear-gradient(to bottom,transparent,rgba(99,102,241,.3) 20%,rgba(99,102,241,.3) 80%,transparent)}
+    /* Grid bg */
+    .grid-bg{background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);background-size:64px 64px}
   </style>
 </head>
 
 <body class="relative z-10">
 
-  <!-- ── NAV ─────────────────────────────────────────────── -->
-  <nav class="sticky top-0 z-50 border-b border-white/[0.04] bg-[#0a0a0c]/80 backdrop-blur-xl">
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-      <div class="flex items-center gap-2.5">
-        <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-500/20 ring-1 ring-indigo-500/30">
-          <svg class="h-4 w-4 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-          </svg>
-        </div>
-        <span class="text-[15px] font-semibold tracking-tight text-white">FlowOS</span>
-        <span class="rounded-full bg-indigo-500/15 px-2 py-0.5 text-[10px] font-medium text-indigo-300 ring-1 ring-indigo-500/20">for Mac</span>
+<!-- ── NAV ─────────────────────────────────────────────── -->
+<nav class="sticky top-0 z-50 border-b border-white/[0.04] bg-[#0a0a0c]/80 backdrop-blur-xl">
+  <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+    <div class="flex items-center gap-2.5">
+      <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-500/20 ring-1 ring-indigo-500/30">
+        <svg class="h-4 w-4 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+        </svg>
       </div>
-      <div class="flex items-center gap-3">
-        <a href="#pricing" class="hidden text-[13px] text-white/50 hover:text-white transition-colors sm:block">Pricing</a>
-        <a href="#features" class="hidden text-[13px] text-white/50 hover:text-white transition-colors sm:block">Features</a>
-        <a href="#pricing"
-          class="rounded-xl bg-indigo-600 px-4 py-2 text-[13px] font-semibold text-white hover:bg-indigo-500 transition-colors">
-          Get Pro
-        </a>
+      <span class="text-[15px] font-semibold">FlowOS</span>
+      <span class="rounded-full bg-indigo-500/15 px-2 py-0.5 text-[10px] font-medium text-indigo-300 ring-1 ring-indigo-500/20">for Mac</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <a href="#demo" class="hidden text-[13px] text-white/40 hover:text-white transition-colors sm:block">Demo</a>
+      <a href="#pricing" class="hidden text-[13px] text-white/40 hover:text-white transition-colors sm:block">Pricing</a>
+      <a href="#pricing" class="rounded-xl bg-indigo-600 px-4 py-2 text-[13px] font-semibold text-white hover:bg-indigo-500 transition-colors">Get Pro</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── HERO ─────────────────────────────────────────────── -->
+<section class="hero-glow grid-bg py-20 md:py-28">
+  <div class="mx-auto max-w-6xl px-6">
+    <div class="flex flex-col items-center gap-14 lg:flex-row">
+
+      <div class="flex-1 text-center lg:text-left">
+        <div class="reveal mb-5 inline-flex items-center gap-2 rounded-full bg-white/[0.05] px-3 py-1.5 ring-1 ring-white/[0.08]">
+          <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-[11px] text-white/50">Version 1.0 — try it free for 7 days</span>
+        </div>
+        <h1 class="reveal rd1 mb-5 text-[44px] font-black leading-[1.06] tracking-tight md:text-[56px]">
+          <span class="gt">Stop the spiral.</span><br/>Own your focus.
+        </h1>
+        <p class="reveal rd2 mb-8 max-w-md text-[16px] leading-relaxed text-white/45">
+          FlowOS is a 340px menu-bar AI. It watches your app switches, reads your calendar, and steps in — without a meeting, a habit tracker, or a productivity system.
+        </p>
+        <div class="reveal rd3 flex flex-col items-center gap-3 sm:flex-row lg:justify-start">
+          <a href="#demo" class="flex items-center gap-2 rounded-xl bg-white/[0.08] px-6 py-3 text-[14px] font-medium text-white hover:bg-white/[0.12] transition-colors ring-1 ring-white/[0.10]">
+            Watch it work ↓
+          </a>
+          <a href="#pricing" class="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-[14px] font-semibold text-white hover:bg-indigo-500 transition-colors">
+            Download for Mac
+          </a>
+        </div>
+        <p class="reveal mt-4 text-[11px] text-white/20">macOS 13+ · Apple Silicon & Intel · No subscription required for basic use</p>
+      </div>
+
+      <!-- Popover hero mockup -->
+      <div class="reveal rd2 float shrink-0">
+        <div class="popover w-[300px]">
+          <div class="flex items-center justify-between border-b border-white/[0.05] px-3 py-2.5">
+            <div class="flex items-center gap-2">
+              <div class="h-6 w-6 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+                <svg class="h-3 w-3 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+              </div>
+              <span class="text-[12px] font-semibold">FlowOS</span>
+            </div>
+            <div class="rounded-lg bg-emerald-500/15 px-2 py-0.5 flex items-center gap-1.5">
+              <div class="h-1.5 w-1.5 rounded-full bg-emerald-400"></div>
+              <span class="text-[10px] font-semibold text-emerald-400">82</span>
+            </div>
+          </div>
+          <div class="flex border-b border-white/[0.05] px-1">
+            <button class="px-3 py-2 text-[11px] font-medium text-white border-b-2 border-indigo-500">Home</button>
+            <button class="px-3 py-2 text-[11px] text-white/30">Capsule</button>
+            <button class="px-3 py-2 text-[11px] text-white/30">Analytics</button>
+          </div>
+          <div class="p-3 space-y-2">
+            <div class="rounded-xl bg-white/[0.04] ring-1 ring-white/[0.07] px-3 py-2.5 flex items-center gap-2">
+              <div class="h-4 w-4 rounded-full bg-red-500/20 flex items-center justify-center"><div class="h-1.5 w-1.5 rounded-full bg-red-400"></div></div>
+              <span class="text-[11px] text-white/35">Hold ⌘⇧K to speak…</span>
+            </div>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button class="rounded-xl py-2 text-[10px] font-medium bg-indigo-600/70 text-white ring-1 ring-indigo-500/50">Coding</button>
+              <button class="rounded-xl py-2 text-[10px] text-white/35 bg-white/[0.03] ring-1 ring-white/[0.05]">Research</button>
+              <button class="rounded-xl py-2 text-[10px] text-white/35 bg-white/[0.03] ring-1 ring-white/[0.05]">Auto</button>
+            </div>
+            <button class="w-full rounded-xl bg-white/[0.04] ring-1 ring-white/[0.07] px-3 py-2.5 flex items-center justify-between">
+              <div><div class="text-[11px] font-medium text-white text-left">Start Tracking</div><div class="text-[10px] text-white/30">Record activity context</div></div>
+            </button>
+            <button class="w-full rounded-xl bg-white/[0.04] ring-1 ring-white/[0.07] px-3 py-2.5 flex items-center justify-between">
+              <div><div class="text-[11px] font-medium text-white text-left">Plan Tomorrow</div><div class="text-[10px] text-white/30">AI schedules your day</div></div>
+              <div class="h-1.5 w-1.5 rounded-full bg-purple-400 opacity-60"></div>
+            </button>
+          </div>
+        </div>
+        <div class="mx-auto mt-4 h-6 w-40 rounded-full bg-indigo-500/20 blur-2xl"></div>
       </div>
     </div>
-  </nav>
+  </div>
+</section>
 
-  <!-- ── HERO ─────────────────────────────────────────────── -->
-  <section class="relative hero-glow grid-bg overflow-hidden py-20 md:py-32">
-    <div class="mx-auto max-w-6xl px-6">
-      <div class="flex flex-col items-center gap-16 lg:flex-row lg:gap-12">
+<div class="sep mx-auto max-w-6xl my-0"></div>
 
-        <!-- Left: copy -->
-        <div class="flex-1 text-center lg:text-left">
-          <div class="reveal mb-5 inline-flex items-center gap-2 rounded-full bg-white/[0.05] px-3 py-1.5 ring-1 ring-white/[0.08]">
-            <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span class="text-[11px] text-white/50">Now available — version 1.0</span>
+<!-- ── INTERACTIVE DEMO ──────────────────────────────────── -->
+<section id="demo" class="py-20">
+  <div class="mx-auto max-w-6xl px-6">
+    <div class="reveal mb-12 text-center">
+      <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-indigo-400">Live Demo</p>
+      <h2 class="text-[34px] font-black tracking-tight md:text-[42px]">See exactly what FlowOS sees.<br/><span class="gti">And what it does about it.</span></h2>
+      <p class="mt-3 text-[14px] text-white/40">Real event data on the left. The UI you'd see on the right.</p>
+    </div>
+
+    <!-- Scenario tabs -->
+    <div class="reveal mb-6 flex flex-wrap justify-center gap-2" id="scenario-tabs">
+      <button data-scenario="0" class="scenario-tab active rounded-xl bg-indigo-600/80 px-4 py-2 text-[12px] font-semibold text-white ring-1 ring-indigo-500/50">🌀 Distraction Spiral</button>
+      <button data-scenario="1" class="scenario-tab rounded-xl bg-white/[0.05] px-4 py-2 text-[12px] font-medium text-white/50 ring-1 ring-white/[0.07] hover:bg-white/[0.08] transition-colors">🎙 Voice Command</button>
+      <button data-scenario="2" class="scenario-tab rounded-xl bg-white/[0.05] px-4 py-2 text-[12px] font-medium text-white/50 ring-1 ring-white/[0.07] hover:bg-white/[0.08] transition-colors">📅 Meeting Prep</button>
+      <button data-scenario="3" class="scenario-tab rounded-xl bg-white/[0.05] px-4 py-2 text-[12px] font-medium text-white/50 ring-1 ring-white/[0.07] hover:bg-white/[0.08] transition-colors">🌙 Night Before</button>
+    </div>
+
+    <!-- Demo stage -->
+    <div class="reveal rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.07] overflow-hidden">
+      <!-- Narration bar -->
+      <div class="border-b border-white/[0.05] px-5 py-3 flex items-center justify-between">
+        <p id="demo-narration" class="text-[13px] text-white/60 flex-1 mr-4">It's 10:42 AM. You've been in deep work for 47 minutes. Focus score: 82.</p>
+        <div class="flex items-center gap-3 shrink-0">
+          <button id="demo-pause" class="text-[11px] text-white/30 hover:text-white/60 transition-colors">⏸ Pause</button>
+          <div class="flex gap-1.5" id="demo-dots"></div>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="h-0.5 bg-white/[0.05]">
+        <div id="demo-progress-bar" class="h-full bg-indigo-500/60 w-0 transition-none"></div>
+      </div>
+
+      <!-- Two panes -->
+      <div class="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-white/[0.05]">
+
+        <!-- Left: event log -->
+        <div class="p-5">
+          <div class="mb-3 flex items-center gap-2">
+            <div class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></div>
+            <span class="mono text-[10px] text-white/25 uppercase tracking-[0.12em]">FlowOS event stream</span>
           </div>
-          <h1 class="reveal reveal-delay-1 mb-5 text-[42px] font-black leading-[1.08] tracking-tight md:text-[56px] lg:text-[52px] xl:text-[60px]">
-            <span class="gradient-text">Stop the spiral.</span><br />
-            Own your focus.
-          </h1>
-          <p class="reveal reveal-delay-2 mb-8 max-w-lg text-[16px] leading-relaxed text-white/50 lg:text-[17px]">
-            FlowOS lives in your menu bar, catches distraction spirals in real time, plans your day from your calendar, and snaps you back into flow — before you've lost the hour.
-          </p>
-          <div class="reveal reveal-delay-3 flex flex-col items-center gap-3 sm:flex-row lg:justify-start">
-            <a href="#pricing"
-              class="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-[14px] font-semibold text-white hover:bg-indigo-500 transition-colors">
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"/><path d="M8 12l4 4 4-4-1.41-1.41L13 12.17V8h-2v4.17l-1.59-1.58z"/></svg>
-              Download for Mac
-            </a>
-            <a href="#features"
-              class="text-[14px] text-white/40 hover:text-white transition-colors">
-              See how it works →
-            </a>
-          </div>
-          <p class="reveal reveal-delay-4 mt-4 text-[11px] text-white/25">macOS 13+ · Apple Silicon &amp; Intel · 7-day free trial</p>
+          <div id="demo-log" class="mono space-y-1 text-[11px] min-h-[220px]"></div>
         </div>
 
-        <!-- Right: app mockup -->
-        <div class="reveal reveal-delay-2 flex-shrink-0 lg:w-[340px]">
-          <div class="mockup-float popover w-[340px]" style="max-width: 340px;">
-            <!-- title bar -->
-            <div class="flex items-center justify-between border-b border-white/[0.05] px-3 py-2.5">
-              <div class="flex items-center gap-2">
-                <div class="h-7 w-7 rounded-lg bg-indigo-500/20 flex items-center justify-center">
-                  <svg class="h-3.5 w-3.5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
-                </div>
-                <span class="text-[12px] font-semibold text-white">FlowOS</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <div class="rounded-lg bg-emerald-500/15 px-2 py-0.5 flex items-center gap-1.5">
-                  <div class="h-1.5 w-1.5 rounded-full bg-emerald-400"></div>
-                  <span class="text-[10px] font-semibold text-emerald-400">Focus 82</span>
-                </div>
-              </div>
+        <!-- Right: FlowOS UI -->
+        <div class="p-5 flex items-start justify-center">
+          <div>
+            <div class="mb-3 flex items-center gap-2">
+              <div class="h-2 w-2 rounded-full bg-indigo-400"></div>
+              <span class="mono text-[10px] text-white/25 uppercase tracking-[0.12em]">What you see</span>
             </div>
-            <!-- tabs -->
-            <div class="flex border-b border-white/[0.05] px-1">
-              {["Home", "Capsule", "Analytics"].map((t, i) => (
-                <button class={`px-3 py-2 text-[11px] font-medium ${i === 0 ? "text-white border-b-2 border-indigo-500" : "text-white/30"}`}>{t}</button>
-              ))}
-            </div>
-            <!-- body -->
-            <div class="p-3 space-y-2">
-              <!-- voice input -->
-              <div class="rounded-xl bg-white/[0.04] ring-1 ring-white/[0.07] px-3 py-2.5 flex items-center gap-2">
-                <div class="h-5 w-5 rounded-full bg-red-500/20 flex items-center justify-center">
-                  <div class="h-2 w-2 rounded-full bg-red-400"></div>
-                </div>
-                <span class="text-[12px] text-white/30">Hold ⌘⇧K to speak…</span>
+            <div id="demo-ui" class="flex justify-center"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Step nav -->
+      <div class="border-t border-white/[0.05] px-5 py-3 flex items-center justify-between">
+        <button id="demo-prev" class="text-[12px] text-white/30 hover:text-white/60 transition-colors">← Prev</button>
+        <span id="demo-step-label" class="text-[11px] text-white/25">Step 1 of 5</span>
+        <button id="demo-next" class="text-[12px] text-white/30 hover:text-white/60 transition-colors">Next →</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="sep mx-auto max-w-6xl my-0"></div>
+
+<!-- ── DAY IN THE LIFE ───────────────────────────────────── -->
+<section class="py-20">
+  <div class="mx-auto max-w-5xl px-6">
+    <div class="reveal mb-14 text-center">
+      <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-indigo-400">A real day</p>
+      <h2 class="text-[34px] font-black tracking-tight md:text-[42px]">Monday, 9am → 9pm.<br/><span class="gti">FlowOS in the background.</span></h2>
+    </div>
+
+    <div class="relative">
+      <!-- Timeline line -->
+      <div class="absolute left-[88px] top-0 bottom-0 w-px tl-line hidden md:block"></div>
+
+      <div class="space-y-10">
+
+        <!-- 8:57 AM — Night Before plan -->
+        <div class="reveal flex gap-6 items-start">
+          <div class="shrink-0 w-20 text-right hidden md:block">
+            <span class="mono text-[11px] text-white/25">8:57 AM</span>
+          </div>
+          <div class="hidden md:flex shrink-0 items-center justify-center h-5 w-5 rounded-full bg-indigo-500/20 ring-1 ring-indigo-500/40 mt-0.5 relative z-10">
+            <div class="h-2 w-2 rounded-full bg-indigo-400"></div>
+          </div>
+          <div class="flex-1 md:pl-2">
+            <div class="md:hidden mb-1"><span class="mono text-[10px] text-white/25">8:57 AM</span></div>
+            <p class="text-[13px] font-semibold text-white mb-1">You open your Mac. Night Before plan is waiting.</p>
+            <p class="text-[12px] text-white/40 mb-3">FlowOS generated this at 9:03 PM last night from your Google Calendar. You approved it before bed.</p>
+            <div class="popover max-w-xs text-[10px]">
+              <div class="h-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500"></div>
+              <div class="px-3 py-2.5 border-b border-white/[0.05]">
+                <p class="text-[11px] font-semibold text-white">Today's plan — approved ✓</p>
               </div>
-              <!-- flow modes -->
-              <div class="grid grid-cols-3 gap-1.5">
+              <div class="px-3 py-2 space-y-1.5">
                 {[
-                  { label: "Coding", color: "indigo", active: true },
-                  { label: "Research", color: "purple", active: false },
-                  { label: "Auto", color: "sky", active: false },
-                ].map(m => (
-                  <button class={`rounded-xl py-2.5 text-[11px] font-medium text-center ${m.active ? "bg-indigo-600/70 text-white ring-1 ring-indigo-500/50" : "bg-white/[0.04] text-white/40 ring-1 ring-white/[0.06]"}`}>
-                    {m.label}
-                  </button>
+                  { time: "9:00a", title: "Deep work: auth PR", type: "deep_work", color: "indigo" },
+                  { time: "10:00a", title: "Eng standup", type: "meeting", color: "blue" },
+                  { time: "10:30a", title: "Code review sprint", type: "deep_work", color: "indigo" },
+                  { time: "12:30p", title: "Lunch + recharge", type: "break", color: "emerald" },
+                  { time: "2:00p", title: "Design review", type: "meeting", color: "blue" },
+                ].map(item => (
+                  <div class="flex items-center gap-2">
+                    <span class="w-9 text-white/25 shrink-0">{item.time}</span>
+                    <span class="flex-1 text-white/65">{item.title}</span>
+                    <span class={`px-1.5 py-0.5 rounded text-[8px] bg-${item.color}-500/15 text-${item.color}-300`}>{item.type.replace("_"," ")}</span>
+                  </div>
                 ))}
               </div>
-              <!-- tracking button -->
-              <button class="w-full rounded-xl bg-white/[0.04] ring-1 ring-white/[0.07] px-3 py-2.5 flex items-center justify-between">
-                <div>
-                  <div class="text-[12px] font-medium text-white text-left">Start Tracking</div>
-                  <div class="text-[10px] text-white/30 mt-0.5">Record activity context</div>
-                </div>
-              </button>
-              <!-- plan tomorrow -->
-              <button class="w-full rounded-xl bg-white/[0.04] ring-1 ring-white/[0.07] px-3 py-2.5 flex items-center justify-between">
-                <div>
-                  <div class="text-[12px] font-medium text-white text-left">Plan Tomorrow</div>
-                  <div class="text-[10px] text-white/30 mt-0.5">AI schedules your day</div>
-                </div>
-                <div class="h-1.5 w-1.5 rounded-full bg-purple-400 opacity-60"></div>
-              </button>
             </div>
           </div>
-          <!-- shadow blob -->
-          <div class="mx-auto mt-4 h-8 w-48 rounded-full bg-indigo-500/20 blur-2xl"></div>
+        </div>
+
+        <!-- 10:43 AM — Spiral -->
+        <div class="reveal flex gap-6 items-start">
+          <div class="shrink-0 w-20 text-right hidden md:block">
+            <span class="mono text-[11px] text-white/25">10:43 AM</span>
+          </div>
+          <div class="hidden md:flex shrink-0 items-center justify-center h-5 w-5 rounded-full bg-red-500/20 ring-1 ring-red-500/40 mt-0.5 relative z-10">
+            <div class="h-2 w-2 rounded-full bg-red-400"></div>
+          </div>
+          <div class="flex-1 md:pl-2">
+            <div class="md:hidden mb-1"><span class="mono text-[10px] text-white/25">10:43 AM</span></div>
+            <p class="text-[13px] font-semibold text-white mb-1">FlowOS fires a spiral alert.</p>
+            <p class="text-[12px] text-white/40 mb-3">Standup ended 13 minutes ago. Since then: Slack → Twitter → Spotify → Slack → Discord. 5 switches in 9 minutes.</p>
+            <div class="popover max-w-xs">
+              <div class="h-1 bg-gradient-to-r from-orange-500 via-red-500 to-orange-500"></div>
+              <div class="p-3">
+                <div class="flex items-center gap-2.5 mb-3">
+                  <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-red-500/15">
+                    <svg class="h-4 w-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" /></svg>
+                  </div>
+                  <div><p class="text-[12px] font-bold text-white">You're spiraling</p><p class="text-[10px] text-white/35">5 switches · 9 min window</p></div>
+                </div>
+                <div class="flex flex-wrap gap-1 mb-3">
+                  {["Slack","Twitter","Spotify","Slack","Discord"].map(a => (
+                    <span class="rounded bg-red-500/10 px-1.5 py-0.5 text-[9px] text-red-300 ring-1 ring-red-500/20">{a}</span>
+                  ))}
+                </div>
+                <button class="w-full rounded-xl bg-indigo-600 py-2 text-[10px] font-semibold text-white mb-1">Lock Focus — 30 min</button>
+                <button class="w-full rounded-xl bg-white/[0.06] py-2 text-[10px] text-white/55">Close distractions now</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 11:00 AM — Focus locked -->
+        <div class="reveal flex gap-6 items-start">
+          <div class="shrink-0 w-20 text-right hidden md:block">
+            <span class="mono text-[11px] text-white/25">11:00 AM</span>
+          </div>
+          <div class="hidden md:flex shrink-0 items-center justify-center h-5 w-5 rounded-full bg-emerald-500/20 ring-1 ring-emerald-500/40 mt-0.5 relative z-10">
+            <div class="h-2 w-2 rounded-full bg-emerald-400"></div>
+          </div>
+          <div class="flex-1 md:pl-2">
+            <div class="md:hidden mb-1"><span class="mono text-[10px] text-white/25">11:00 AM</span></div>
+            <p class="text-[13px] font-semibold text-white mb-1">You clicked "Lock Focus." Focus score: 88 and rising.</p>
+            <p class="text-[12px] text-white/40 mb-3">Slack, Twitter, Spotify, Discord — all quit. Coding layout applied. 30-minute lock starts now.</p>
+            <div class="popover max-w-xs">
+              <div class="px-3 py-2.5 flex items-center justify-between border-b border-white/[0.05]">
+                <span class="text-[11px] font-semibold text-white">Coding</span>
+                <div class="flex items-center gap-1.5 rounded-lg bg-emerald-500/15 px-2 py-0.5">
+                  <div class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
+                  <span class="text-[10px] font-semibold text-emerald-400">Focus 88 ↑</span>
+                </div>
+              </div>
+              <div class="px-3 py-3">
+                <div class="rounded-xl bg-emerald-500/8 ring-1 ring-emerald-500/20 px-3 py-2.5">
+                  <p class="text-[11px] font-semibold text-emerald-300 mb-1">Focus locked — 27 min remaining</p>
+                  <p class="text-[10px] text-white/35">4 apps closed · Layout: Coding</p>
+                  <div class="mt-2 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                    <div class="h-full w-[10%] rounded-full bg-emerald-500/60"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1:15 PM — Prep alarm -->
+        <div class="reveal flex gap-6 items-start">
+          <div class="shrink-0 w-20 text-right hidden md:block">
+            <span class="mono text-[11px] text-white/25">1:15 PM</span>
+          </div>
+          <div class="hidden md:flex shrink-0 items-center justify-center h-5 w-5 rounded-full bg-blue-500/20 ring-1 ring-blue-500/40 mt-0.5 relative z-10">
+            <div class="h-2 w-2 rounded-full bg-blue-400"></div>
+          </div>
+          <div class="flex-1 md:pl-2">
+            <div class="md:hidden mb-1"><span class="mono text-[10px] text-white/25">1:15 PM</span></div>
+            <p class="text-[13px] font-semibold text-white mb-1">Design Review is in 45 minutes. Prep banner appears.</p>
+            <p class="text-[12px] text-white/40 mb-3">FlowOS checked Apple Calendar 3 minutes ago. You haven't opened the Figma link yet.</p>
+            <div class="popover max-w-xs">
+              <div class="p-3 space-y-2">
+                <div class="rounded-xl bg-blue-500/10 ring-1 ring-blue-500/25 p-3">
+                  <div class="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      <p class="text-[11px] font-semibold text-white">Design Review</p>
+                      <p class="text-[10px] text-blue-300 mt-0.5">in 44 minutes · Zoom</p>
+                    </div>
+                    <span class="text-white/20">✕</span>
+                  </div>
+                  <button class="w-full rounded-lg bg-blue-600 py-1.5 text-[10px] font-medium text-white">Enter Prep Mode — close distractions</button>
+                </div>
+                <div class="rounded-xl bg-white/[0.03] ring-1 ring-white/[0.05] px-3 py-2 opacity-40">
+                  <div class="text-[10px] text-white/30">Hold ⌘⇧K to speak…</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5:47 PM — Commitment resolved -->
+        <div class="reveal flex gap-6 items-start">
+          <div class="shrink-0 w-20 text-right hidden md:block">
+            <span class="mono text-[11px] text-white/25">5:47 PM</span>
+          </div>
+          <div class="hidden md:flex shrink-0 items-center justify-center h-5 w-5 rounded-full bg-emerald-500/20 ring-1 ring-emerald-500/40 mt-0.5 relative z-10">
+            <div class="h-2 w-2 rounded-full bg-emerald-400"></div>
+          </div>
+          <div class="flex-1 md:pl-2">
+            <div class="md:hidden mb-1"><span class="mono text-[10px] text-white/25">5:47 PM</span></div>
+            <p class="text-[13px] font-semibold text-white mb-1">You stop tracking. FlowOS asks about your goal.</p>
+            <p class="text-[12px] text-white/40 mb-3">This morning you set a commitment: "Finish the auth PR review." 8 hours later, FlowOS checks in.</p>
+            <div class="popover max-w-xs">
+              <div class="flex flex-col justify-end" style="min-height: 140px;">
+                <div class="bg-[#0c0c0e] p-3 border-t border-white/[0.05] space-y-2.5">
+                  <p class="text-[11px] font-semibold text-white">Session complete</p>
+                  <p class="text-[10px] text-white/45 bg-white/[0.04] rounded-lg px-2.5 py-1.5">"Finish the auth PR review"</p>
+                  <p class="text-[11px] text-white/55">Did you complete your goal?</p>
+                  <div class="flex gap-2">
+                    <button class="flex-1 py-1.5 rounded-xl bg-emerald-600 text-white text-[10px] font-semibold">Yes ✓</button>
+                    <button class="flex-1 py-1.5 rounded-xl bg-white/[0.07] text-white/50 text-[10px]">Not quite</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 9:03 PM — Night Before -->
+        <div class="reveal flex gap-6 items-start">
+          <div class="shrink-0 w-20 text-right hidden md:block">
+            <span class="mono text-[11px] text-white/25">9:03 PM</span>
+          </div>
+          <div class="hidden md:flex shrink-0 items-center justify-center h-5 w-5 rounded-full bg-purple-500/20 ring-1 ring-purple-500/40 mt-0.5 relative z-10">
+            <div class="h-2 w-2 rounded-full bg-purple-400"></div>
+          </div>
+          <div class="flex-1 md:pl-2">
+            <div class="md:hidden mb-1"><span class="mono text-[10px] text-white/25">9:03 PM</span></div>
+            <p class="text-[13px] font-semibold text-white mb-1">Night Before mode fires automatically.</p>
+            <p class="text-[12px] text-white/40 mb-3">FlowOS reads tomorrow's calendar, sends it to AI, and generates a schedule. You review and approve. Takes 20 seconds.</p>
+            <div class="popover max-w-xs">
+              <div class="h-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500"></div>
+              <div class="px-3 py-2.5 border-b border-white/[0.05] flex items-center justify-between">
+                <p class="text-[11px] font-bold text-white">Tomorrow's plan</p>
+                <span class="text-[9px] text-white/25">Tue May 5</span>
+              </div>
+              <div class="px-3 py-2 space-y-1">
+                {[
+                  { time: "9:00a", title: "Deep work: new feature", type: "deep_work" },
+                  { time: "10:30a", title: "1:1 with manager", type: "meeting" },
+                  { time: "11:00a", title: "Follow-up tasks", type: "shallow" },
+                  { time: "1:00p", title: "Lunch break", type: "break" },
+                ].map(item => (
+                  <div class="flex items-center gap-2">
+                    <span class="w-9 mono text-[9px] text-white/25 shrink-0">{item.time}</span>
+                    <span class="flex-1 text-[10px] text-white/60">{item.title}</span>
+                    <span class={`text-[8px] px-1 py-0.5 rounded ${item.type==="deep_work"?"bg-indigo-500/15 text-indigo-300":item.type==="meeting"?"bg-blue-500/15 text-blue-300":item.type==="break"?"bg-emerald-500/15 text-emerald-300":"bg-amber-500/15 text-amber-300"}`}>{item.type.replace("_"," ")}</span>
+                  </div>
+                ))}
+              </div>
+              <div class="px-3 pb-3 pt-1">
+                <button class="w-full rounded-xl bg-indigo-600 py-2 text-[10px] font-semibold text-white">Approve plan</button>
+              </div>
+            </div>
+          </div>
         </div>
 
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <div class="sep mx-auto max-w-6xl"></div>
+<div class="sep mx-auto max-w-6xl my-0"></div>
 
-  <!-- ── LOGOS / SOCIAL PROOF ─────────────────────────────── -->
-  <section class="py-10">
-    <p class="reveal text-center text-[11px] font-semibold uppercase tracking-[0.15em] text-white/20">Built for people who do deep work</p>
-    <div class="mt-6 flex flex-wrap items-center justify-center gap-8 px-6 opacity-30">
-      {["Engineers", "Researchers", "Designers", "Writers", "Founders"].map(r => (
-        <span class="text-[13px] font-medium text-white/60">{r}</span>
+<!-- ── PRICING ────────────────────────────────────────────── -->
+<section id="pricing" class="py-20">
+  <div class="mx-auto max-w-4xl px-6">
+    <div class="reveal mb-12 text-center">
+      <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-indigo-400">Pricing</p>
+      <h2 class="text-[34px] font-black tracking-tight md:text-[42px]">Simple, honest pricing.</h2>
+      <p class="mt-3 text-[14px] text-white/40">Start free. Upgrade when you're hooked.</p>
+    </div>
+    <div class="grid gap-5 md:grid-cols-2">
+      <!-- Free -->
+      <div class="reveal pc rounded-2xl bg-white/[0.03] p-6 ring-1 ring-white/[0.08]">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/30">Free</p>
+        <p class="mt-2 text-[38px] font-black">$0</p>
+        <p class="text-[12px] text-white/30 mb-6">forever</p>
+        <ul class="mb-8 space-y-3">
+          {["Voice commands (⌘⇧K)","3 Focus Modes — Coding, Research, Auto","Window & Chrome tab management","5 AI flow runs per day","Activity tracking"].map(f => (
+            <li class="flex items-start gap-2.5 text-[13px] text-white/50">
+              <svg class="mt-0.5 h-4 w-4 shrink-0 text-white/25" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              {f}
+            </li>
+          ))}
+        </ul>
+        <a href="#" class="block w-full rounded-xl bg-white/[0.06] py-3 text-center text-[13px] font-semibold text-white hover:bg-white/[0.10] transition-colors ring-1 ring-white/[0.08]">Download Free</a>
+      </div>
+      <!-- Pro -->
+      <div class="reveal rd1 pc relative rounded-2xl bg-gradient-to-b from-indigo-600/20 to-purple-600/10 p-6 ring-1 ring-indigo-500/40">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+          <span class="rounded-full bg-indigo-600 px-3 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white">Most Popular</span>
+        </div>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-indigo-300">Pro</p>
+        <div class="mt-2 flex items-baseline gap-2">
+          <p class="text-[38px] font-black">${PRICE_MONTHLY}</p>
+          <p class="text-[14px] text-white/40">/mo</p>
+        </div>
+        <p class="text-[12px] text-white/40 mb-6">or ${PRICE_ANNUAL}/yr <span class="text-emerald-400 font-medium">— save 18%</span></p>
+        <ul class="mb-8 space-y-3">
+          {[
+            "Everything in Free",
+            "Spiral Detection — catches distraction in real time",
+            "Night Before Mode — AI plans your day from calendar",
+            "Pre-Mortem Alarm — 45min warning before meetings",
+            "Energy Heatmap — know your peak focus hours",
+            "Commitment Contracts — session goal tracking",
+            "Friction Scoring — app distraction leaderboard",
+            "Unlimited AI flow runs",
+          ].map(f => (
+            <li class="flex items-start gap-2.5 text-[13px] text-white/70">
+              <svg class="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              {f}
+            </li>
+          ))}
+        </ul>
+        <a href="#" class="block w-full rounded-xl bg-indigo-600 py-3 text-center text-[13px] font-semibold text-white hover:bg-indigo-500 transition-colors">Start 7-Day Free Trial</a>
+        <p class="mt-2 text-center text-[11px] text-white/25">No credit card required</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sep mx-auto max-w-6xl my-0"></div>
+
+<!-- ── BOTTOM CTA ─────────────────────────────────────────── -->
+<section class="py-20">
+  <div class="reveal mx-auto max-w-xl px-6 text-center">
+    <h2 class="mb-4 text-[34px] font-black tracking-tight"><span class="gti">Your best work is one<br/>⌘⇧K away.</span></h2>
+    <p class="mb-8 text-[14px] text-white/40">Join engineers, researchers, and founders who stopped fighting their own attention.</p>
+    <div class="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+      <a href="#" class="rounded-xl bg-indigo-600 px-8 py-3.5 text-[14px] font-semibold text-white hover:bg-indigo-500 transition-colors">Download FlowOS — Free</a>
+      <a href="#pricing" class="text-[14px] text-white/35 hover:text-white transition-colors">View pricing →</a>
+    </div>
+    <p class="mt-4 text-[11px] text-white/20">macOS 13 Ventura or later · Apple Silicon & Intel</p>
+  </div>
+</section>
+
+<!-- ── FOOTER ─────────────────────────────────────────────── -->
+<footer class="border-t border-white/[0.04] py-8">
+  <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-5 px-6 text-center md:flex-row">
+    <div class="flex items-center gap-2">
+      <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-500/20">
+        <svg class="h-3 w-3 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      </div>
+      <span class="text-[13px] font-semibold text-white/50">FlowOS</span>
+    </div>
+    <div class="flex gap-6">
+      {["Privacy","Terms","Contact"].map(l => (
+        <a href="#" class="text-[12px] text-white/25 hover:text-white/55 transition-colors">{l}</a>
       ))}
     </div>
-  </section>
-
-  <div class="sep mx-auto max-w-6xl"></div>
-
-  <!-- ── FEATURES ──────────────────────────────────────────── -->
-  <section id="features" class="py-24">
-    <div class="mx-auto max-w-6xl px-6">
-      <div class="reveal mb-16 text-center">
-        <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-indigo-400">Features</p>
-        <h2 class="text-[36px] font-black tracking-tight md:text-[44px]">Every layer of your focus, covered.</h2>
-      </div>
-
-      <!-- F1: Spiral Detection -->
-      <div class="feature-glow-right mb-24 grid items-center gap-12 lg:grid-cols-2">
-        <div class="reveal order-2 lg:order-1">
-          <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-red-400">Spiral Detection</p>
-          <h3 class="mb-4 text-[28px] font-black tracking-tight leading-tight">
-            Caught in the loop?<br /><span class="gradient-text-indigo">We'll catch you first.</span>
-          </h3>
-          <p class="mb-6 text-[15px] leading-relaxed text-white/50">
-            FlowOS watches your app switches in a rolling 10-minute window. The moment it sees you bouncing between Slack → Spotify → Twitter → repeat, it interrupts — not after an hour, but after three switches.
-          </p>
-          <ul class="space-y-2.5">
-            {[
-              "Detects distraction spirals within 10 minutes",
-              "One click to lock focus for 30 minutes",
-              "Suppressed during intentional focus blocks",
-            ].map(item => (
-              <li class="flex items-start gap-2.5 text-[13px] text-white/60">
-                <svg class="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div class="reveal reveal-delay-2 order-1 flex justify-center lg:order-2">
-          <!-- Spiral Modal mockup -->
-          <div class="popover w-[300px]" style="max-width: 300px;">
-            <div class="h-1 bg-gradient-to-r from-orange-500 via-red-500 to-orange-500"></div>
-            <div class="p-4">
-              <div class="mb-3 flex items-center gap-2.5">
-                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-red-500/15">
-                  <svg class="h-4 w-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" /></svg>
-                </div>
-                <div>
-                  <p class="text-[13px] font-bold text-white">You're spiraling</p>
-                  <p class="text-[10px] text-white/40">4 switches in 8 minutes</p>
-                </div>
-              </div>
-              <div class="mb-3 flex flex-wrap gap-1.5">
-                {["Slack", "Spotify", "Twitter", "Slack"].map(a => (
-                  <span class="rounded-md bg-red-500/10 px-2 py-0.5 text-[10px] text-red-300 ring-1 ring-red-500/20">{a}</span>
-                ))}
-              </div>
-              <div class="space-y-1.5">
-                <button class="w-full rounded-xl bg-indigo-600 py-2 text-[11px] font-semibold text-white">Lock Focus — 30 min</button>
-                <button class="w-full rounded-xl bg-white/[0.06] py-2 text-[11px] text-white/60">Close distractions now</button>
-                <button class="w-full py-1.5 text-[10px] text-white/20">Dismiss</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- F2: Night Before Mode -->
-      <div class="feature-glow-left mb-24 grid items-center gap-12 lg:grid-cols-2">
-        <div class="reveal flex justify-center">
-          <!-- Night Before mockup -->
-          <div class="popover w-[300px]" style="max-width: 300px;">
-            <div class="h-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500"></div>
-            <div class="border-b border-white/[0.05] px-4 py-3 flex items-center justify-between">
-              <p class="text-[13px] font-bold text-white">Tomorrow's plan</p>
-              <span class="text-[10px] text-white/25">9:07 PM</span>
-            </div>
-            <div class="px-4 py-3 space-y-2">
-              <p class="text-[9px] font-semibold uppercase tracking-[0.1em] text-white/25">Meetings</p>
-              <p class="text-[11px] text-white/50">10:00 AM — Eng standup</p>
-              <p class="text-[11px] text-white/50">2:00 PM — Design review</p>
-              <div class="mt-3 space-y-1.5">
-                <p class="text-[9px] font-semibold uppercase tracking-[0.1em] text-white/25">Suggested schedule</p>
-                {[
-                  { time: "8:30a", title: "Deep work block", type: "deep_work" },
-                  { time: "9:45a", title: "Prep for standup", type: "shallow" },
-                  { time: "10:00a", title: "Eng standup", type: "meeting" },
-                  { time: "10:30a", title: "Code review sprint", type: "deep_work" },
-                ].map(item => (
-                  <div class="flex items-center gap-2 rounded-lg bg-white/[0.03] px-2 py-1.5">
-                    <span class="w-9 text-[9px] text-white/25 shrink-0">{item.time}</span>
-                    <span class="flex-1 text-[10px] text-white/70">{item.title}</span>
-                    <span class={`text-[8px] px-1.5 py-0.5 rounded ${item.type === "deep_work" ? "bg-indigo-500/15 text-indigo-300" : item.type === "meeting" ? "bg-blue-500/15 text-blue-300" : "bg-amber-500/15 text-amber-300"}`}>{item.type.replace("_"," ")}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div class="border-t border-white/[0.05] px-4 py-3">
-              <button class="w-full rounded-xl bg-indigo-600 py-2 text-[11px] font-semibold text-white">Approve plan</button>
-            </div>
-          </div>
-        </div>
-        <div class="reveal reveal-delay-1">
-          <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-purple-400">Night Before Mode</p>
-          <h3 class="mb-4 text-[28px] font-black tracking-tight leading-tight">
-            Tomorrow,<br /><span class="gradient-text-indigo">planned tonight.</span>
-          </h3>
-          <p class="mb-6 text-[15px] leading-relaxed text-white/50">
-            Every evening at 9 PM, FlowOS reads your calendar, sends tomorrow's events to AI, and generates a focused schedule — deep work first, prep time before meetings, breaks built in. You approve it, then sleep.
-          </p>
-          <ul class="space-y-2.5">
-            {[
-              "Pulls from Apple Calendar automatically",
-              "AI schedules deep work around your meetings",
-              "One-tap approve to lock in the plan",
-            ].map(item => (
-              <li class="flex items-start gap-2.5 text-[13px] text-white/60">
-                <svg class="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      <!-- F3: Pre-Mortem Alarm -->
-      <div class="feature-glow-right mb-24 grid items-center gap-12 lg:grid-cols-2">
-        <div class="reveal order-2 lg:order-1">
-          <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-blue-400">Pre-Mortem Alarm</p>
-          <h3 class="mb-4 text-[28px] font-black tracking-tight leading-tight">
-            Your next meeting<br /><span class="gradient-text-indigo">is in 45 minutes.</span>
-          </h3>
-          <p class="mb-6 text-[15px] leading-relaxed text-white/50">
-            FlowOS checks your calendar every 5 minutes. When an event is 45 minutes away, it surfaces a prep banner and offers to enter focus mode — so you show up prepared, not scrambling.
-          </p>
-          <ul class="space-y-2.5">
-            {[
-              "45-minute heads-up before every event",
-              "One tap to enter prep focus mode",
-              "Shows meeting title, time, and location",
-            ].map(item => (
-              <li class="flex items-start gap-2.5 text-[13px] text-white/60">
-                <svg class="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div class="reveal reveal-delay-2 order-1 flex justify-center lg:order-2">
-          <!-- Prep Banner mockup (inside popover) -->
-          <div class="popover w-[300px]" style="max-width: 300px;">
-            <div class="p-3 pb-1 space-y-2">
-              <!-- prep banner -->
-              <div class="rounded-xl bg-blue-500/10 ring-1 ring-blue-500/25 p-3">
-                <div class="flex items-start justify-between gap-2 mb-2">
-                  <div>
-                    <p class="text-[12px] font-semibold text-white">Design Review</p>
-                    <p class="text-[10px] text-blue-300 mt-0.5">in 44 minutes</p>
-                    <p class="text-[10px] text-white/30 mt-0.5">Zoom · Recurring</p>
-                  </div>
-                  <span class="text-white/20 text-[11px]">✕</span>
-                </div>
-                <button class="w-full rounded-lg bg-blue-600 py-1.5 text-[11px] font-medium text-white">Enter Prep Mode</button>
-              </div>
-              <!-- rest of UI dimmed -->
-              <div class="rounded-xl bg-white/[0.02] ring-1 ring-white/[0.04] px-3 py-2.5 opacity-30">
-                <div class="text-[11px] text-white/40">Hold ⌘⇧K to speak…</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- F4: Voice + Flow Modes -->
-      <div class="feature-glow-left mb-24 grid items-center gap-12 lg:grid-cols-2">
-        <div class="reveal flex justify-center">
-          <!-- Voice / flow mode mockup -->
-          <div class="popover w-[300px]" style="max-width: 300px;">
-            <div class="p-3 space-y-2">
-              <!-- active mic -->
-              <div class="rounded-xl bg-red-500/10 ring-1 ring-red-500/25 px-3 py-2.5 flex items-center gap-2.5">
-                <div class="relative flex h-5 w-5 items-center justify-center">
-                  <div class="absolute h-full w-full rounded-full bg-red-500/30 animate-ping"></div>
-                  <div class="h-2.5 w-2.5 rounded-full bg-red-400"></div>
-                </div>
-                <span class="text-[12px] text-white/80">Listening…</span>
-                <span class="ml-auto text-[10px] text-red-300/60">⌘⇧K</span>
-              </div>
-              <!-- transcription -->
-              <div class="rounded-xl bg-white/[0.04] ring-1 ring-white/[0.07] px-3 py-2 text-[12px] text-white/60 italic">
-                "Switch to research mode and open my notes"
-              </div>
-              <!-- result -->
-              <div class="rounded-xl bg-emerald-500/8 ring-1 ring-emerald-500/20 px-3 py-2.5 space-y-1">
-                <p class="text-[11px] font-medium text-emerald-300">Done — 3 actions</p>
-                <p class="text-[10px] text-white/35">Research layout applied · Notes opened · 2 tabs regrouped</p>
-              </div>
-              <!-- flow modes -->
-              <div class="grid grid-cols-3 gap-1.5 pt-1">
-                <button class="rounded-xl py-2 text-[10px] font-medium text-center bg-white/[0.04] text-white/40 ring-1 ring-white/[0.06]">Coding</button>
-                <button class="rounded-xl py-2 text-[10px] font-medium text-center bg-purple-600/70 text-white ring-1 ring-purple-500/50">Research</button>
-                <button class="rounded-xl py-2 text-[10px] font-medium text-center bg-white/[0.04] text-white/40 ring-1 ring-white/[0.06]">Auto</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="reveal reveal-delay-1">
-          <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-400">Voice Commands</p>
-          <h3 class="mb-4 text-[28px] font-black tracking-tight leading-tight">
-            Just press ⌘⇧K<br /><span class="gradient-text-indigo">and say the thing.</span>
-          </h3>
-          <p class="mb-6 text-[15px] leading-relaxed text-white/50">
-            Speak naturally. FlowOS understands complex commands, rearranges windows across displays, regroups Chrome tabs, and switches focus layouts — in under two seconds, without touching the mouse.
-          </p>
-          <ul class="space-y-2.5">
-            {[
-              "Instant transcription with OpenAI Whisper",
-              "3 built-in layouts: Coding, Research, Auto",
-              "Controls windows, Chrome tabs, and app focus",
-            ].map(item => (
-              <li class="flex items-start gap-2.5 text-[13px] text-white/60">
-                <svg class="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      <!-- F5 + F6: Commitment + Energy (side by side cards) -->
-      <div class="grid gap-6 md:grid-cols-2">
-        <!-- Commitment Contracts -->
-        <div class="reveal rounded-2xl bg-white/[0.03] p-6 ring-1 ring-white/[0.07]">
-          <div class="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/15">
-            <svg class="h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          </div>
-          <h3 class="mb-2 text-[20px] font-bold">Commitment Contracts</h3>
-          <p class="mb-5 text-[13px] leading-relaxed text-white/45">
-            Before each session, set one goal. After you stop, FlowOS asks: did you finish it? Your completion streak builds over time.
-          </p>
-          <!-- mini mockup -->
-          <div class="rounded-xl bg-[#0c0c0e] ring-1 ring-white/[0.06] p-3 space-y-2">
-            <p class="text-[11px] font-semibold text-white">What's your goal?</p>
-            <div class="rounded-lg bg-white/[0.05] ring-1 ring-white/[0.08] px-2.5 py-1.5 text-[11px] text-white/50 italic">Finish the auth PR review</div>
-            <button class="w-full rounded-xl bg-indigo-600 py-1.5 text-[10px] font-semibold text-white">Set Goal &amp; Start</button>
-          </div>
-        </div>
-
-        <!-- Energy Heatmap -->
-        <div class="reveal reveal-delay-1 rounded-2xl bg-white/[0.03] p-6 ring-1 ring-white/[0.07]">
-          <div class="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15">
-            <svg class="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-          </div>
-          <h3 class="mb-2 text-[20px] font-bold">Energy Heatmap</h3>
-          <p class="mb-5 text-[13px] leading-relaxed text-white/45">
-            After two weeks, FlowOS knows when you're actually sharp. Turns out it's 10am. Schedule accordingly.
-          </p>
-          <!-- mini heatmap mockup -->
-          <div class="rounded-xl bg-[#0c0c0e] ring-1 ring-white/[0.06] p-3">
-            <p class="mb-2 text-[9px] font-semibold uppercase tracking-[0.1em] text-white/25">Your energy — last 14 days</p>
-            <div class="flex gap-0.5 flex-wrap">
-              {Array.from({ length: 16 }, (_, i) => {
-                const scores = [0,0,5,20,75,85,88,82,70,55,45,60,40,30,15,5];
-                const s = scores[i] ?? 0;
-                return (
-                  <div
-                    class={`rounded-sm flex-shrink-0 ${s >= 70 ? "bg-emerald-500/70" : s >= 40 ? "bg-amber-500/60" : s >= 15 ? "bg-red-500/35" : "bg-white/[0.05]"}`}
-                    style={`width: 16px; height: 20px;`}
-                    title={`Hour ${i + 6}: ${s}`}
-                  ></div>
-                );
-              })}
-            </div>
-            <div class="mt-2.5 flex gap-1.5 flex-wrap">
-              {["9am", "10am", "11am"].map(h => (
-                <span class="text-[9px] bg-emerald-500/15 text-emerald-300 px-1.5 py-0.5 rounded-md">{h} peak</span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <div class="sep mx-auto max-w-6xl"></div>
-
-  <!-- ── PRICING ─────────────────────────────────────────── -->
-  <section id="pricing" class="py-24">
-    <div class="mx-auto max-w-4xl px-6">
-      <div class="reveal mb-14 text-center">
-        <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-indigo-400">Pricing</p>
-        <h2 class="text-[36px] font-black tracking-tight md:text-[44px]">Simple, honest pricing.</h2>
-        <p class="mt-3 text-[15px] text-white/45">Start free. Upgrade when you're hooked.</p>
-      </div>
-
-      <div class="grid gap-5 md:grid-cols-2">
-
-        <!-- Free -->
-        <div class="reveal pricing-card rounded-2xl bg-white/[0.03] p-6 ring-1 ring-white/[0.08]">
-          <div class="mb-6">
-            <p class="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/35">Free</p>
-            <p class="mt-2 text-[36px] font-black tracking-tight">$0</p>
-            <p class="text-[13px] text-white/35">forever</p>
-          </div>
-          <ul class="mb-8 space-y-3">
-            {[
-              "Voice commands (⌘⇧K)",
-              "3 Focus Modes — Coding, Research, Auto",
-              "Window &amp; Chrome tab management",
-              "5 AI flow runs per day",
-              "Activity tracking",
-            ].map(f => (
-              <li class="flex items-start gap-2.5 text-[13px] text-white/55">
-                <svg class="mt-0.5 h-4 w-4 shrink-0 text-white/30" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                <span set:html={f} />
-              </li>
-            ))}
-          </ul>
-          <a href="#"
-            class="block w-full rounded-xl bg-white/[0.06] py-3 text-center text-[13px] font-semibold text-white hover:bg-white/[0.10] transition-colors ring-1 ring-white/[0.08]">
-            Download Free
-          </a>
-        </div>
-
-        <!-- Pro -->
-        <div class="reveal reveal-delay-1 pricing-card relative rounded-2xl bg-gradient-to-b from-indigo-600/20 to-purple-600/10 p-6 ring-1 ring-indigo-500/40">
-          <div class="absolute -top-3 left-1/2 -translate-x-1/2">
-            <span class="rounded-full bg-indigo-600 px-3 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white">Most Popular</span>
-          </div>
-          <div class="mb-6">
-            <p class="text-[12px] font-semibold uppercase tracking-[0.1em] text-indigo-300">Pro</p>
-            <div class="mt-2 flex items-baseline gap-2">
-              <p class="text-[36px] font-black tracking-tight">${PRICE_MONTHLY}</p>
-              <p class="text-[14px] text-white/45">/mo</p>
-            </div>
-            <p class="text-[13px] text-white/45">or ${PRICE_ANNUAL}/yr <span class="text-emerald-400 font-medium">— save 18%</span></p>
-          </div>
-          <ul class="mb-8 space-y-3">
-            {[
-              "Everything in Free",
-              "Spiral Detection — AI distraction alerts",
-              "Night Before Mode — AI daily planning",
-              "Pre-Mortem Alarm — calendar-aware prep",
-              "Energy Heatmap — know your peak hours",
-              "Commitment Contracts — session goals",
-              "Friction Scoring — distraction leaderboard",
-              "Unlimited AI flow runs",
-              "Priority support",
-            ].map(f => (
-              <li class="flex items-start gap-2.5 text-[13px] text-white/75">
-                <svg class="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                {f}
-              </li>
-            ))}
-          </ul>
-          <a href="#"
-            class="block w-full rounded-xl bg-indigo-600 py-3 text-center text-[13px] font-semibold text-white hover:bg-indigo-500 transition-colors">
-            Start 7-Day Free Trial
-          </a>
-          <p class="mt-2.5 text-center text-[11px] text-white/25">No credit card required</p>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-  <div class="sep mx-auto max-w-6xl"></div>
-
-  <!-- ── BOTTOM CTA ─────────────────────────────────────── -->
-  <section class="py-24">
-    <div class="reveal mx-auto max-w-2xl px-6 text-center">
-      <h2 class="mb-4 text-[36px] font-black tracking-tight md:text-[44px]">
-        Your best work is<br /><span class="gradient-text-indigo">one ⌘⇧K away.</span>
-      </h2>
-      <p class="mb-8 text-[15px] text-white/45">
-        Join engineers, researchers, and founders who stopped fighting their own attention.
-      </p>
-      <div class="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-        <a href="#"
-          class="flex items-center gap-2 rounded-xl bg-indigo-600 px-8 py-3.5 text-[14px] font-semibold text-white hover:bg-indigo-500 transition-colors">
-          Download FlowOS — Free
-        </a>
-        <a href="#pricing" class="text-[14px] text-white/40 hover:text-white transition-colors">View pricing →</a>
-      </div>
-      <p class="mt-4 text-[11px] text-white/20">macOS 13 Ventura or later · Apple Silicon &amp; Intel</p>
-    </div>
-  </section>
-
-  <!-- ── FOOTER ─────────────────────────────────────────── -->
-  <footer class="border-t border-white/[0.04] py-10">
-    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-6 text-center md:flex-row md:text-left">
-      <div class="flex items-center gap-2">
-        <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-500/20">
-          <svg class="h-3 w-3 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
-        </div>
-        <span class="text-[13px] font-semibold text-white/60">FlowOS</span>
-      </div>
-      <div class="flex gap-6">
-        {["Privacy", "Terms", "Contact"].map(l => (
-          <a href="#" class="text-[12px] text-white/30 hover:text-white/60 transition-colors">{l}</a>
-        ))}
-      </div>
-      <p class="text-[11px] text-white/20">© 2026 FlowOS. Built for Mac.</p>
-    </div>
-  </footer>
+    <p class="text-[11px] text-white/20">© 2026 FlowOS. Built for Mac.</p>
+  </div>
+</footer>
 
 </body>
 
-<!-- ── SCROLL REVEAL ──────────────────────────────────── -->
 <script>
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("visible");
-        }
+// ── Scroll reveal ────────────────────────────────────────────
+const revealObserver = new IntersectionObserver(
+  entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("visible"); }),
+  { threshold: 0.08, rootMargin: "0px 0px -30px 0px" }
+);
+document.querySelectorAll(".reveal").forEach(el => revealObserver.observe(el));
+
+// ── Interactive demo ─────────────────────────────────────────
+type LogLine = { text: string; color: string };
+type Step = { narration: string; log: LogLine[]; uiHtml: string };
+type Scenario = { steps: Step[] };
+
+const C = {
+  dim:  "color: rgba(255,255,255,0.25)",
+  norm: "color: rgba(255,255,255,0.55)",
+  good: "color: #34d399",
+  warn: "color: #fb923c",
+  err:  "color: #f87171",
+  hi:   "color: #a5b4fc",
+  ts:   "color: rgba(255,255,255,0.2)",
+};
+
+function ts(t: string) { return `<span style="${C.ts}">${t}</span>`; }
+function kv(k: string, v: string, vc: string) {
+  return `<span style="${C.dim}">${k}</span><span style="${vc}"> ${v}</span>`;
+}
+
+// Reusable UI snippets
+const popoverShell = (inner: string) =>
+  `<div class="popover" style="width:260px">${inner}</div>`;
+
+const idlePopover = popoverShell(`
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06)">
+    <span style="font-size:11px;font-weight:600">FlowOS</span>
+    <div style="background:rgba(52,211,153,0.15);border-radius:8px;padding:2px 8px;display:flex;align-items:center;gap:5px">
+      <div style="width:6px;height:6px;border-radius:50%;background:#34d399"></div>
+      <span style="font-size:10px;font-weight:600;color:#34d399">Focus 82</span>
+    </div>
+  </div>
+  <div style="padding:10px 12px">
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:8px 12px;font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:8px">Hold ⌘⇧K to speak…</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+      <div style="background:rgba(99,102,241,0.6);border:1px solid rgba(99,102,241,0.5);border-radius:10px;padding:7px;font-size:10px;font-weight:600;text-align:center">Coding</div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:7px;font-size:10px;color:rgba(255,255,255,0.3);text-align:center">Research</div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:7px;font-size:10px;color:rgba(255,255,255,0.3);text-align:center">Auto</div>
+    </div>
+  </div>
+`);
+
+const spiralPopover = popoverShell(`
+  <div style="height:4px;background:linear-gradient(90deg,#f97316,#ef4444,#f97316)"></div>
+  <div style="padding:12px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="width:32px;height:32px;border-radius:10px;background:rgba(239,68,68,0.15);display:flex;align-items:center;justify-content:center;font-size:14px">⚠️</div>
+      <div><div style="font-size:12px;font-weight:700">You're spiraling</div><div style="font-size:10px;color:rgba(255,255,255,0.35)">5 switches in 9 min</div></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">
+      ${["Slack","Twitter","Spotify","Slack","Discord"].map(a =>
+        `<span style="background:rgba(239,68,68,0.1);color:#fca5a5;font-size:9px;padding:2px 6px;border-radius:4px;border:1px solid rgba(239,68,68,0.2)">${a}</span>`
+      ).join("")}
+    </div>
+    <button style="width:100%;background:#4f46e5;border:none;border-radius:10px;padding:8px;color:#fff;font-size:10px;font-weight:600;cursor:pointer;margin-bottom:5px">Lock Focus — 30 min</button>
+    <button style="width:100%;background:rgba(255,255,255,0.07);border:none;border-radius:10px;padding:7px;color:rgba(255,255,255,0.55);font-size:10px;cursor:pointer">Close distractions now</button>
+  </div>
+`);
+
+const lockedPopover = popoverShell(`
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06)">
+    <span style="font-size:11px;font-weight:600">Coding — locked</span>
+    <div style="background:rgba(52,211,153,0.15);border-radius:8px;padding:2px 8px;display:flex;align-items:center;gap:5px">
+      <div style="width:6px;height:6px;border-radius:50%;background:#34d399;animation:pulse 1s infinite"></div>
+      <span style="font-size:10px;font-weight:600;color:#34d399">Focus 91 ↑</span>
+    </div>
+  </div>
+  <div style="padding:10px 12px">
+    <div style="background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:10px 12px">
+      <div style="font-size:11px;font-weight:600;color:#6ee7b7;margin-bottom:4px">Focus locked — 29 min remaining</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:8px">4 apps closed · Spiral resolved</div>
+      <div style="height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden">
+        <div style="width:6%;height:100%;background:rgba(52,211,153,0.6);border-radius:2px"></div>
+      </div>
+    </div>
+  </div>
+`);
+
+const voiceIdlePopover = popoverShell(`
+  <div style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between">
+    <span style="font-size:11px;font-weight:600">FlowOS</span>
+    <span style="font-size:10px;font-weight:600;color:#34d399">Focus 76</span>
+  </div>
+  <div style="padding:10px 12px">
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:8px 12px;font-size:11px;color:rgba(255,255,255,0.3)">Hold ⌘⇧K to speak…</div>
+  </div>
+`);
+
+const voiceListeningPopover = popoverShell(`
+  <div style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06)">
+    <span style="font-size:11px;font-weight:600">FlowOS</span>
+  </div>
+  <div style="padding:10px 12px">
+    <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <div style="position:relative;width:18px;height:18px;display:flex;align-items:center;justify-content:center">
+        <div style="position:absolute;width:100%;height:100%;border-radius:50%;background:rgba(239,68,68,0.3);animation:ping 1s infinite"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:#f87171"></div>
+      </div>
+      <span style="font-size:11px;color:rgba(255,255,255,0.8)">Listening…</span>
+      <span style="margin-left:auto;font-size:10px;color:rgba(239,68,68,0.6)">⌘⇧K</span>
+    </div>
+    <div style="height:28px;background:rgba(255,255,255,0.03);border-radius:8px;padding:0 10px;display:flex;align-items:center">
+      <span style="font-size:11px;color:rgba(255,255,255,0.15)">—</span>
+    </div>
+  </div>
+`);
+
+const voiceTypingPopover = (text: string) => popoverShell(`
+  <div style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06)">
+    <span style="font-size:11px;font-weight:600">FlowOS</span>
+  </div>
+  <div style="padding:10px 12px">
+    <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <div style="width:8px;height:8px;border-radius:50%;background:#f87171"></div>
+      <span style="font-size:11px;color:rgba(255,255,255,0.8)">Transcribing…</span>
+    </div>
+    <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:7px 10px;font-size:11px;color:rgba(255,255,255,0.65);font-style:italic">"${text}"</div>
+  </div>
+`);
+
+const voiceDonePopover = popoverShell(`
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06)">
+    <span style="font-size:11px;font-weight:600">Research mode</span>
+    <span style="font-size:10px;font-weight:600;color:#34d399">Focus 79</span>
+  </div>
+  <div style="padding:10px 12px">
+    <div style="background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:10px 12px;margin-bottom:8px">
+      <div style="font-size:11px;font-weight:600;color:#6ee7b7;margin-bottom:3px">Done — 3 actions</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.35)">Research layout applied</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.35)">4 Chrome tabs regrouped</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.35)">Notion opened · Slack minimized</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:7px;font-size:10px;color:rgba(255,255,255,0.3);text-align:center">Coding</div>
+      <div style="background:rgba(139,92,246,0.6);border:1px solid rgba(139,92,246,0.5);border-radius:10px;padding:7px;font-size:10px;font-weight:600;text-align:center">Research</div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:7px;font-size:10px;color:rgba(255,255,255,0.3);text-align:center">Auto</div>
+    </div>
+  </div>
+`);
+
+const prepPopover = popoverShell(`
+  <div style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between">
+    <span style="font-size:11px;font-weight:600">FlowOS</span>
+    <span style="font-size:10px;color:rgba(255,255,255,0.3)">1:15 PM</span>
+  </div>
+  <div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px">
+    <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);border-radius:10px;padding:10px 12px">
+      <div style="display:flex;align-items:start;justify-content:space-between;margin-bottom:7px">
+        <div>
+          <div style="font-size:11px;font-weight:600;color:#fff">Design Review</div>
+          <div style="font-size:10px;color:#93c5fd;margin-top:2px">in 44 minutes · Zoom</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:1px">Recurring · 1h</div>
+        </div>
+        <span style="font-size:11px;color:rgba(255,255,255,0.2);cursor:pointer">✕</span>
+      </div>
+      <button style="width:100%;background:#2563eb;border:none;border-radius:8px;padding:6px;color:#fff;font-size:10px;font-weight:500;cursor:pointer">Enter Prep Mode — close distractions</button>
+    </div>
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:8px 12px;opacity:0.4">
+      <span style="font-size:11px;color:rgba(255,255,255,0.3)">Hold ⌘⇧K to speak…</span>
+    </div>
+  </div>
+`);
+
+const prepLockedPopover = popoverShell(`
+  <div style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between">
+    <span style="font-size:11px;font-weight:600">Prep Mode</span>
+    <div style="background:rgba(59,130,246,0.15);border-radius:8px;padding:2px 8px;display:flex;align-items:center;gap:5px">
+      <div style="width:6px;height:6px;border-radius:50%;background:#60a5fa"></div>
+      <span style="font-size:10px;font-weight:600;color:#60a5fa">Focus 85</span>
+    </div>
+  </div>
+  <div style="padding:10px 12px">
+    <div style="background:rgba(59,130,246,0.07);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:10px 12px">
+      <div style="font-size:11px;font-weight:600;color:#93c5fd;margin-bottom:3px">Prep mode active</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.35)">Design Review starts in 41 min</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px">5 apps closed · Figma opened</div>
+    </div>
+  </div>
+`);
+
+const nightLoadingPopover = popoverShell(`
+  <div style="height:2px;background:linear-gradient(90deg,#6366f1,#a855f7,#6366f1);background-size:200% auto;animation:shimmer 2s linear infinite"></div>
+  <div style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between">
+    <span style="font-size:11px;font-weight:700">Night Before Mode</span>
+    <span style="font-size:10px;color:rgba(255,255,255,0.25)">9:03 PM</span>
+  </div>
+  <div style="padding:14px 12px;display:flex;flex-direction:column;align-items:center;gap:8px">
+    <div style="width:32px;height:32px;border-radius:50%;border:2px solid rgba(99,102,241,0.3);border-top-color:#818cf8;animation:spin 1s linear infinite"></div>
+    <div style="text-align:center">
+      <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.7)">Reading tomorrow's calendar…</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:3px">Fetching 3 events</div>
+    </div>
+  </div>
+`);
+
+const nightReadyPopover = popoverShell(`
+  <div style="height:2px;background:linear-gradient(90deg,#6366f1,#a855f7,#6366f1)"></div>
+  <div style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between">
+    <span style="font-size:11px;font-weight:700">Tomorrow's plan</span>
+    <span style="font-size:10px;color:rgba(255,255,255,0.25)">Tue May 5</span>
+  </div>
+  <div style="padding:10px 12px">
+    <div style="font-size:9px;color:rgba(255,255,255,0.25);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.1em">Meetings (3)</div>
+    ${["9:30a — Eng standup","2:00p — Design review","4:00p — 1:1 with PM"].map(e =>
+      `<div style="font-size:10px;color:rgba(255,255,255,0.45);margin-bottom:3px">${e}</div>`
+    ).join("")}
+    <div style="font-size:9px;color:rgba(255,255,255,0.25);margin:10px 0 6px;text-transform:uppercase;letter-spacing:0.1em">AI schedule</div>
+    ${[
+      {t:"8:30a",n:"Deep work block",c:"indigo"},
+      {t:"9:15a",n:"Prep for standup",c:"amber"},
+      {t:"9:30a",n:"Eng standup",c:"blue"},
+      {t:"10:00a",n:"Code review sprint",c:"indigo"},
+      {t:"1:00p",n:"Lunch + recharge",c:"emerald"},
+    ].map(i =>
+      `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;padding:4px 8px;background:rgba(255,255,255,0.02);border-radius:6px">
+        <span style="font-size:9px;color:rgba(255,255,255,0.25);width:32px;font-family:monospace">${i.t}</span>
+        <span style="flex:1;font-size:10px;color:rgba(255,255,255,0.6)">${i.n}</span>
+      </div>`
+    ).join("")}
+    <button style="width:100%;background:#4f46e5;border:none;border-radius:10px;padding:8px;color:#fff;font-size:10px;font-weight:600;cursor:pointer;margin-top:6px">Approve plan ✓</button>
+  </div>
+`);
+
+// ── Scenario data ─────────────────────────────────────────────
+const SCENARIOS: Scenario[] = [
+  // 0: Spiral
+  {
+    steps: [
+      {
+        narration: "It's 10:42 AM. You've been in deep work for 47 minutes. Focus score: 82.",
+        log: [
+          {text:`${ts("10:42:01")}  ${kv("app.activated","VSCode",C.good)}  ${kv("score","82",C.good)}`, color: C.good},
+        ],
+        uiHtml: idlePopover,
+      },
+      {
+        narration: "Quick Slack check. Normal. But your focus score just dipped.",
+        log: [
+          {text:`${ts("10:42:01")}  ${kv("app.activated","VSCode",C.good)}  ${kv("score","82",C.good)}`, color: C.dim},
+          {text:`${ts("10:43:12")}  ${kv("app.activated","Slack",C.warn)}   ${kv("score","74",C.warn)}`, color: C.warn},
+        ],
+        uiHtml: idlePopover,
+      },
+      {
+        narration: "Twitter. Then Spotify. Three distraction switches in under two minutes.",
+        log: [
+          {text:`${ts("10:42:01")}  ${kv("app.activated","VSCode",C.good)}  ${kv("score","82",C.good)}`, color: C.dim},
+          {text:`${ts("10:43:12")}  ${kv("app.activated","Slack",C.warn)}   ${kv("score","74",C.warn)}`, color: C.dim},
+          {text:`${ts("10:43:48")}  ${kv("app.activated","Twitter",C.err)}  ${kv("score","65",C.err)}`, color: C.err},
+          {text:`${ts("10:44:03")}  ${kv("app.activated","Spotify",C.err)}  ${kv("score","58",C.err)}`, color: C.err},
+        ],
+        uiHtml: idlePopover,
+      },
+      {
+        narration: "Slack again — 5th switch in 9 minutes. FlowOS fires the spiral alert.",
+        log: [
+          {text:`${ts("10:43:12")}  ${kv("app.activated","Slack",C.warn)}   ${kv("score","74",C.warn)}`, color: C.dim},
+          {text:`${ts("10:43:48")}  ${kv("app.activated","Twitter",C.err)}  ${kv("score","65",C.err)}`, color: C.dim},
+          {text:`${ts("10:44:03")}  ${kv("app.activated","Spotify",C.err)}  ${kv("score","58",C.err)}`, color: C.dim},
+          {text:`${ts("10:44:15")}  ${kv("app.activated","Slack",C.err)}    ${kv("score","51",C.err)}`, color: C.err},
+          {text:`${ts("10:44:15")}  <span style="${C.err};font-weight:600">⚠  SPIRAL DETECTED</span>  <span style="${C.dim}">5 switches / 9 min window</span>`, color: C.err},
+        ],
+        uiHtml: spiralPopover,
+      },
+      {
+        narration: "One click. Slack, Twitter, Spotify, Discord — all quit. You're back in flow.",
+        log: [
+          {text:`${ts("10:44:03")}  ${kv("app.activated","Spotify",C.err)}  ${kv("score","58",C.err)}`, color: C.dim},
+          {text:`${ts("10:44:15")}  ${kv("app.activated","Slack",C.err)}    ${kv("score","51",C.err)}`, color: C.dim},
+          {text:`${ts("10:44:15")}  <span style="${C.err};font-weight:600">⚠  SPIRAL DETECTED</span>`, color: C.dim},
+          {text:`${ts("10:44:22")}  ${kv("spiral.resolve","lock_focus",C.hi)}`, color: C.hi},
+          {text:`${ts("10:44:22")}  ${kv("apps.closed","Slack Twitter Spotify Discord",C.good)}`, color: C.good},
+          {text:`${ts("10:44:22")}  <span style="${C.good};font-weight:600">✓  Focus locked — 30 min</span>`, color: C.good},
+        ],
+        uiHtml: lockedPopover,
+      },
+    ],
+  },
+
+  // 1: Voice command
+  {
+    steps: [
+      {
+        narration: "You just finished a meeting. You want to shift into research mode.",
+        log: [
+          {text:`${ts("11:02:44")}  ${kv("app.activated","Zoom",C.dim)}     ${kv("score","71",C.warn)}`, color: C.dim},
+          {text:`${ts("11:03:01")}  ${kv("shortcut.triggered","⌘⇧K",C.hi)}`, color: C.hi},
+        ],
+        uiHtml: voiceIdlePopover,
+      },
+      {
+        narration: "You press ⌘⇧K. Whisper starts recording. The mic is live.",
+        log: [
+          {text:`${ts("11:03:01")}  ${kv("shortcut.triggered","⌘⇧K",C.hi)}`, color: C.dim},
+          {text:`${ts("11:03:01")}  ${kv("whisper.recording","started",C.warn)}`, color: C.warn},
+        ],
+        uiHtml: voiceListeningPopover,
+      },
+      {
+        narration: "You say: \"Switch to research mode, close social tabs, open my notes.\"",
+        log: [
+          {text:`${ts("11:03:01")}  ${kv("whisper.recording","started",C.warn)}`, color: C.dim},
+          {text:`${ts("11:03:04")}  ${kv("whisper.transcript",'"switch to research mode, close social tabs, open my notes"',C.norm)}`, color: C.norm},
+          {text:`${ts("11:03:04")}  ${kv("gpt4o.planning","parsing intent…",C.hi)}`, color: C.hi},
+        ],
+        uiHtml: voiceTypingPopover("switch to research mode, close social tabs, open my notes"),
+      },
+      {
+        narration: "FlowOS executes: research layout, 4 Chrome tabs regrouped, Notion opened. 1.8 seconds total.",
+        log: [
+          {text:`${ts("11:03:04")}  ${kv("gpt4o.planning","3 tool calls",C.hi)}`, color: C.dim},
+          {text:`${ts("11:03:05")}  ${kv("tool.applyLayout","research",C.good)}  <span style="${C.good}">✓</span>`, color: C.good},
+          {text:`${ts("11:03:05")}  ${kv("tool.groupTabs","social → close (4)",C.good)}  <span style="${C.good}">✓</span>`, color: C.good},
+          {text:`${ts("11:03:05")}  ${kv("tool.launchApp","Notion",C.good)}  <span style="${C.good}">✓</span>`, color: C.good},
+          {text:`${ts("11:03:06")}  <span style="${C.good};font-weight:600">✓  Done — 1.8s</span>`, color: C.good},
+        ],
+        uiHtml: voiceDonePopover,
+      },
+    ],
+  },
+
+  // 2: Prep alarm
+  {
+    steps: [
+      {
+        narration: "It's 1:15 PM. You're deep in code. Design Review is at 2 PM.",
+        log: [
+          {text:`${ts("13:15:00")}  ${kv("calendar.poll","today's events",C.hi)}`, color: C.hi},
+          {text:`${ts("13:15:00")}  ${kv("event.found",'"Design Review" @ 14:00',C.norm)}`, color: C.norm},
+        ],
+        uiHtml: idlePopover,
+      },
+      {
+        narration: "45 minutes until the meeting. FlowOS checks the prep threshold.",
+        log: [
+          {text:`${ts("13:15:00")}  ${kv("event.found",'"Design Review" @ 14:00',C.norm)}`, color: C.dim},
+          {text:`${ts("13:15:00")}  ${kv("prep.check","minsUntil=44  threshold=45",C.hi)}`, color: C.hi},
+          {text:`${ts("13:15:00")}  <span style="${C.warn};font-weight:600">→  PREP TRIGGERED  </span><span style="${C.dim}">Design Review</span>`, color: C.warn},
+        ],
+        uiHtml: prepPopover,
+      },
+      {
+        narration: "You click \"Enter Prep Mode.\" Distractions close, Figma opens. Ready.",
+        log: [
+          {text:`${ts("13:15:00")}  <span style="${C.warn};font-weight:600">→  PREP TRIGGERED</span>`, color: C.dim},
+          {text:`${ts("13:17:22")}  ${kv("prep.resolve","enter_focus",C.hi)}`, color: C.hi},
+          {text:`${ts("13:17:22")}  ${kv("apps.closed","Slack Spotify Discord",C.good)}  <span style="${C.good}">✓</span>`, color: C.good},
+          {text:`${ts("13:17:22")}  ${kv("tool.launchApp","Figma",C.good)}  <span style="${C.good}">✓</span>`, color: C.good},
+          {text:`${ts("13:17:23")}  <span style="${C.good};font-weight:600">✓  Prep mode — 41 min to meeting</span>`, color: C.good},
+        ],
+        uiHtml: prepLockedPopover,
+      },
+    ],
+  },
+
+  // 3: Night Before
+  {
+    steps: [
+      {
+        narration: "It's 9:03 PM. FlowOS checks the clock. Night Before mode fires automatically.",
+        log: [
+          {text:`${ts("21:03:00")}  ${kv("scheduler.check","hour=21  triggerHour=21",C.hi)}`, color: C.hi},
+          {text:`${ts("21:03:00")}  ${kv("nightbefore.fire","date=2026-05-05",C.norm)}`, color: C.norm},
+          {text:`${ts("21:03:00")}  ${kv("calendar.fetch","tomorrow's events…",C.hi)}`, color: C.hi},
+        ],
+        uiHtml: nightLoadingPopover,
+      },
+      {
+        narration: "3 calendar events fetched. Sent to GPT-4o with scheduling instructions.",
+        log: [
+          {text:`${ts("21:03:00")}  ${kv("calendar.fetch","3 events found",C.good)}  <span style="${C.good}">✓</span>`, color: C.good},
+          {text:`${ts("21:03:01")}  ${kv("openai.request","gpt-4o-mini  prompt=487 tokens",C.hi)}`, color: C.hi},
+          {text:`${ts("21:03:03")}  ${kv("openai.response","schedule_items=5  tokens=312",C.norm)}`, color: C.norm},
+        ],
+        uiHtml: nightLoadingPopover,
+      },
+      {
+        narration: "Schedule generated. FlowOS surfaces it for your approval. Takes 3 seconds total.",
+        log: [
+          {text:`${ts("21:03:03")}  ${kv("openai.response","schedule_items=5",C.norm)}`, color: C.dim},
+          {text:`${ts("21:03:03")}  ${kv("morning_plan.save","id=plan-abc123",C.good)}  <span style="${C.good}">✓</span>`, color: C.good},
+          {text:`${ts("21:03:03")}  <span style="${C.good};font-weight:600">✓  Schedule ready — awaiting approval</span>`, color: C.good},
+        ],
+        uiHtml: nightReadyPopover,
+      },
+    ],
+  },
+];
+
+// ── Demo engine ───────────────────────────────────────────────
+let currentScenario = 0;
+let currentStep = 0;
+let paused = false;
+let timer: ReturnType<typeof setTimeout> | null = null;
+const STEP_DURATION = 3200;
+
+const logEl     = document.getElementById("demo-log")!;
+const uiEl      = document.getElementById("demo-ui")!;
+const narrEl    = document.getElementById("demo-narration")!;
+const dotsEl    = document.getElementById("demo-dots")!;
+const barEl     = document.getElementById("demo-progress-bar")!;
+const labelEl   = document.getElementById("demo-step-label")!;
+const pauseBtn  = document.getElementById("demo-pause")!;
+const prevBtn   = document.getElementById("demo-prev")!;
+const nextBtn   = document.getElementById("demo-next")!;
+
+function renderStep() {
+  const scenario = SCENARIOS[currentScenario]!;
+  const step = scenario.steps[currentStep]!;
+
+  // Narration
+  narrEl.textContent = step.narration;
+
+  // Log — render each line with stagger
+  logEl.innerHTML = "";
+  step.log.forEach((line, i) => {
+    const div = document.createElement("div");
+    div.innerHTML = line.text;
+    div.style.cssText = `${C.norm};animation-delay:${i * 60}ms;opacity:0`;
+    div.className = "log-entry";
+    logEl.appendChild(div);
+  });
+
+  // UI
+  uiEl.innerHTML = step.uiHtml;
+
+  // Step label
+  labelEl.textContent = `Step ${currentStep + 1} of ${scenario.steps.length}`;
+
+  // Dots
+  dotsEl.innerHTML = "";
+  scenario.steps.forEach((_, i) => {
+    const dot = document.createElement("div");
+    dot.style.cssText = `width:6px;height:6px;border-radius:50%;background:${i === currentStep ? "rgba(99,102,241,0.9)" : "rgba(255,255,255,0.15)"};transition:background .3s;cursor:pointer`;
+    dot.addEventListener("click", () => { currentStep = i; clearAutoAdvance(); renderStep(); });
+    dotsEl.appendChild(dot);
+  });
+
+  // Progress bar
+  barEl.style.transition = "none";
+  barEl.style.width = "0%";
+  if (!paused) {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        barEl.style.transition = `width ${STEP_DURATION}ms linear`;
+        barEl.style.width = "100%";
       });
-    },
-    { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
-  );
-  document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
+    });
+  }
+}
+
+function advance() {
+  const scenario = SCENARIOS[currentScenario]!;
+  currentStep = (currentStep + 1) % scenario.steps.length;
+  renderStep();
+}
+
+function clearAutoAdvance() {
+  if (timer) { clearTimeout(timer); timer = null; }
+  barEl.style.transition = "none";
+  barEl.style.width = "0%";
+}
+
+function scheduleAdvance() {
+  clearAutoAdvance();
+  if (paused) return;
+  timer = setTimeout(() => { advance(); scheduleAdvance(); }, STEP_DURATION);
+}
+
+pauseBtn.addEventListener("click", () => {
+  paused = !paused;
+  pauseBtn.textContent = paused ? "▶ Play" : "⏸ Pause";
+  if (paused) { clearAutoAdvance(); } else { scheduleAdvance(); renderStep(); }
+});
+
+prevBtn.addEventListener("click", () => {
+  const scenario = SCENARIOS[currentScenario]!;
+  currentStep = (currentStep - 1 + scenario.steps.length) % scenario.steps.length;
+  clearAutoAdvance();
+  renderStep();
+  if (!paused) scheduleAdvance();
+});
+
+nextBtn.addEventListener("click", () => {
+  advance();
+  clearAutoAdvance();
+  if (!paused) scheduleAdvance();
+});
+
+document.querySelectorAll(".scenario-tab").forEach((btn) => {
+  btn.addEventListener("click", (e) => {
+    const idx = parseInt((e.currentTarget as HTMLElement).dataset.scenario ?? "0");
+    currentScenario = idx;
+    currentStep = 0;
+    document.querySelectorAll(".scenario-tab").forEach(b => {
+      (b as HTMLElement).className = "scenario-tab rounded-xl bg-white/[0.05] px-4 py-2 text-[12px] font-medium text-white/50 ring-1 ring-white/[0.07] hover:bg-white/[0.08] transition-colors";
+    });
+    (e.currentTarget as HTMLElement).className = "scenario-tab active rounded-xl bg-indigo-600/80 px-4 py-2 text-[12px] font-semibold text-white ring-1 ring-indigo-500/50";
+    clearAutoAdvance();
+    renderStep();
+    if (!paused) scheduleAdvance();
+  });
+});
+
+// Boot
+renderStep();
+scheduleAdvance();
 </script>
 
 </html>
