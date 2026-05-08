@@ -9,6 +9,7 @@ import { SpiralModal } from "./components/SpiralModal";
 import { FrictionPanel } from "./components/FrictionPanel";
 import { PrepBanner } from "./components/PrepBanner";
 import { EnergyHeatmap } from "./components/EnergyHeatmap";
+import { CommitmentModal } from "./components/CommitmentModal";
 
 type TrackingEventRecord = {
   timestamp: string;
@@ -192,6 +193,9 @@ export function App() {
   const [focusAlert, setFocusAlert] = useState(false);
   const [spiralEvent, setSpiralEvent] = useState<SpiralEvent | null>(null);
   const [prepData, setPrepData] = useState<PrepData | null>(null);
+  const [commitmentMode, setCommitmentMode] = useState<"goal" | "resolve" | null>(null);
+  const [activeCommitmentId, setActiveCommitmentId] = useState<string | null>(null);
+  const [activeGoalText, setActiveGoalText] = useState<string | null>(null);
 
   useEffect(() => {
     const unsub = window.flowos?.onTriggerSuggestion((s) => setTriggerSuggestion(s));
@@ -256,6 +260,7 @@ export function App() {
         tracking
       }));
       setStatusMessage("Tracking started.");
+      setCommitmentMode("goal");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : String(error));
       setStatusMessage("Tracking failed.");
@@ -276,6 +281,7 @@ export function App() {
       const tracking = await window.flowos.stopTracking();
       setBootstrap((current) => ({ ...current, tracking }));
       setStatusMessage("Tracking stopped.");
+      if (activeCommitmentId) setCommitmentMode("resolve");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : String(error));
       setStatusMessage("Stop tracking failed.");
@@ -428,6 +434,29 @@ export function App() {
         boxShadow: isListening ? "0 0 0 3px rgba(239,68,68,0.25), 0 0 20px rgba(239,68,68,0.15)" : "none"
       }}
     >
+      {/* ── Commitment Contract Modal ── */}
+      {commitmentMode && !spiralEvent && (
+        <CommitmentModal
+          mode={commitmentMode}
+          goalText={activeGoalText ?? undefined}
+          commitmentId={activeCommitmentId ?? undefined}
+          onGoalSet={(text, id) => {
+            setActiveGoalText(text);
+            setActiveCommitmentId(id);
+            setCommitmentMode(null);
+          }}
+          onResolved={async (completed) => {
+            if (activeCommitmentId) {
+              await window.flowos?.commitmentResolve(activeCommitmentId, completed);
+            }
+            setActiveCommitmentId(null);
+            setActiveGoalText(null);
+            setCommitmentMode(null);
+          }}
+          onDismiss={() => setCommitmentMode(null)}
+        />
+      )}
+
       {/* ── Spiral Modal overlay ── */}
       {spiralEvent && (
         <SpiralModal

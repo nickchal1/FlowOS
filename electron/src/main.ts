@@ -1,6 +1,7 @@
 import { app, BrowserWindow, Menu, Tray, dialog, ipcMain, nativeImage, net, globalShortcut, screen } from "electron";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { randomUUID } from "node:crypto";
 import { ensureDatabase } from "@flowos/db";
 import { startSession, endSession } from "./services/sessionStore.js";
 import { isLocalSttConfigured } from "./services/localSttConfig.js";
@@ -173,7 +174,6 @@ async function bootstrap() {
         win.webContents.send(ipcChannels.spiralDetected, event);
       }
       if (db) {
-        const { randomUUID } = require("node:crypto") as { randomUUID: () => string };
         db.prepare(`
           INSERT INTO spiral_events (id, triggered_at, app_sequence, action_taken)
           VALUES (?, ?, ?, NULL)
@@ -520,6 +520,44 @@ async function bootstrap() {
   ipcMain.handle(ipcChannels.energyCurve, () => {
     if (!db) return [];
     return getEnergyCurve(db, 14);
+  });
+
+  ipcMain.handle(ipcChannels.commitmentSave, (_event, goalText: string) => {
+    if (!db || !goalText.trim()) return null;
+    const id = randomUUID();
+    db.prepare(`
+      INSERT INTO commitments (id, session_id, goal_text, completed, created_at)
+      VALUES (?, ?, ?, NULL, ?)
+    `).run(id, activeSessionId, goalText.trim(), new Date().toISOString());
+    return id;
+  });
+
+  ipcMain.handle(ipcChannels.commitmentResolve, (_event, id: string, completed: boolean) => {
+    if (!db) return;
+    db.prepare(`
+      UPDATE commitments SET completed = ?, resolved_at = ? WHERE id = ?
+    `).run(completed ? 1 : 0, new Date().toISOString(), id);
+  });
+
+  ipcMain.handle(ipcChannels.commitmentStats, () => {
+    if (!db) return { total: 0, completed: 0, streak: 0, hitRate: 0, recentGoals: [] };
+    const total     = (db.prepare("SELECT COUNT(*) as n FROM commitments WHERE completed IS NOT NULL").get() as { n: number }).n;
+    const completed = (db.prepare("SELECT COUNT(*) as n FROM commitments WHERE completed = 1").get() as { n: number }).n;
+    const recent    = db.prepare("SELECT * FROM commitments ORDER BY created_at DESC LIMIT 10").all() as Array<{
+      id: string; goal_text: string; completed: number | null; created_at: string;
+    }>;
+    let streak = 0;
+    for (const r of recent) {
+      if (r.completed === 1) streak++;
+      else break;
+    }
+    return {
+      total,
+      completed,
+      streak,
+      hitRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+      recentGoals: recent,
+    };
   });
 
   ipcMain.handle(ipcChannels.calendarToday, async () => {
