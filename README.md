@@ -155,10 +155,53 @@ FlowOS/
 ```
 
 **Data flow:**
-1. Voice or button → Whisper → OpenAI agent loop (≤20 iterations)
-2. Agent calls tools → Electron dispatches to Swift helper (JSON-RPC stdio) or Chrome extension (WebSocket)
-3. Results flow back as tool_result messages → agent continues or returns summary
-4. All sessions, events, focus scores, commitments, morning plans stored locally in SQLite at `~/Library/Application Support/FlowOS/flowos.db`
+
+```text
+                     🎙️ Speech In                🟢 Mode Button
+                          │                            │
+                          ▼                            │
+              MediaRecorder (renderer)                 │
+                          │                            │
+                          ▼                            │
+                OpenAI Whisper (STT)                   │
+                       whisper-1                       │
+                          │                            │
+                          └────────────┬───────────────┘
+                                       │
+                                       ▼
+                        ┌──────────────────────────────┐
+                        │       OpenAI Agent Loop      │
+                        │  GPT-4o · ≤20 iters          │
+                        │      function calling        │
+                        └──────────────┬───────────────┘
+                                       │
+       ┌────────────────┬──────────────┼──────────────┬──────────────┐
+       │                │              │              │              │
+   System          Chrome         Tracking       Tool calls       Tool calls
+   Snapshot        Snapshot       Summary
+   (apps/windows/  (tabs/windows/ (50-event       │              │
+    displays)       groups)       ring buffer)    ▼              ▼
+       ▲                ▲              ▲     Swift Native   Chrome Extension
+       │                │              │     Helper         (Manifest V3
+       │                │              │     (AX API,        + WebSocket)
+       │                │              │      AppKit,             │
+       │                │              │      CoreGraphics)       │
+       │                │              │           │              │
+       │                │              │           ▼              ▼
+       │                │              │   🖥️ Window         🌐 Tab
+       │                │              │      management        management
+       │                │              │   move · resize    focus · pin
+       │                │              │   raise · focus    open · group
+       │                │              │   minimize · hide  ungroup
+       │                │              │   per-display      (never close)
+       │                │              │   visible-rect
+       │                │              │   tiling
+       │                │              │
+       └─ live ─────────┴──── live ────┘
+          snapshots             native events
+```
+
+All sessions, focus scores, spiral events, commitments, and morning plans are stored locally in SQLite at `~/Library/Application Support/FlowOS/flowos.db`.
 
 **Services running in the background:**
 | Service | What it does |
