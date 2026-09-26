@@ -1,15 +1,17 @@
-# FlowOS — your Mac's AI focus copilot
+# FlowOS — a local-first macOS automation agent
 
 > Talk to your menu bar. Watch your desktop snap into place. And never lose an hour to distraction again.
 
-FlowOS lives as a small icon in your macOS menu bar. Press **⌘⇧K**, speak a command, and it moves windows, groups Chrome tabs, and switches focus layouts — in seconds. But it does a lot more than window management now: it watches your app-switch patterns, reads your calendar, scores your focus in real time, and steps in before you lose the hour.
+FlowOS lives in the macOS menu bar and turns natural-language commands into actions across native windows, Chrome, and VS Code. Press **⌘⇧K**, speak a command, and a tool-calling agent plans against live desktop state before executing through Swift native services and authenticated browser/editor extensions.
+
+Desktop state, activity history, layouts, and analytics remain on device in SQLite. Voice transcription can run locally through `whisper.cpp`; the current `edge-inference` branch uses OpenAI for agent reasoning and falls back to OpenAI Whisper only when local speech-to-text is not configured.
 
 ---
 
 ## What It Does
 
 ### Voice-driven desktop control
-Hit **⌘⇧K** from anywhere on macOS, speak your request, hit **⌘⇧K** again to send. OpenAI Whisper transcribes, an agent loop plans against a live snapshot of every window and tab, and the Swift helper + Chrome extension execute it.
+Hit **⌘⇧K** from anywhere on macOS, speak your request, and hit **⌘⇧K** again to send. The renderer records WebM audio, converts it to 16 kHz mono PCM, and transcribes it locally with `whisper.cpp` when configured. The agent then reasons over live system, Chrome, and VS Code snapshots and selects from 30 tools.
 
 Commands that work today:
 - *"Switch to coding mode"* → IDE fills the left, terminal snaps right, Slack/Spotify/Chrome close
@@ -43,13 +45,13 @@ Before a focus session, set one goal. After you stop, FlowOS asks: did you finis
 Every time you open an app, FlowOS records what your focus score was at that moment. Over time it builds a distraction leaderboard — the apps that most reliably pull you out of flow, ranked.
 
 ### Context Capsule
-Save your full work state — every window position, every Chrome tab, the active layout — as a named snapshot. Restore it later with one click. Works like a "save game" for your desktop.
+Save your full work state — native window positions, Chrome tabs, and VS Code editor context — as a named snapshot. Restore it later with one click. Works like a "save game" for your desktop.
 
 ### Deep Work Guardian
 A real-time focus score (0–100) in the menu bar, computed from how fast you're switching apps. Drops below a threshold and you get an alert before the spiral starts.
 
 ### VS Code Integration
-Bidirectional control via 9 AI tools over WebSocket — open files, run commands, read diagnostics, all triggerable by voice.
+Bidirectional control via 9 agent tools over WebSocket — open files, search text and symbols, run terminal commands, read diagnostics, split editors, and focus panels, all triggerable by voice.
 
 ### Analytics Tab
 Weekly focus stats, session history, friction leaderboard, and energy heatmap — all local, all yours.
@@ -62,7 +64,8 @@ Weekly focus stats, session history, friction leaderboard, and energy heatmap �
 - Node.js 20+ and npm
 - Swift toolchain (`xcode-select --install`)
 - Google Chrome (for the browser-control extension)
-- OpenAI API key with access to `gpt-4o` or newer + Whisper
+- OpenAI API key for agent reasoning (`gpt-4.1-mini` by default)
+- Optional for local speech-to-text: `whisper.cpp`, `ffmpeg`, and a compatible GGML Whisper model
 
 ---
 
@@ -72,7 +75,7 @@ Weekly focus stats, session history, friction leaderboard, and energy heatmap �
 
 **1. Clone and install**
 ```bash
-git clone https://github.com/<you>/FlowOS.git
+git clone https://github.com/nickchal1/FlowOS.git
 cd FlowOS
 npm install
 ```
@@ -81,12 +84,28 @@ npm install
 ```bash
 cp .env.example .env
 ```
-Fill in your key:
+Configure agent reasoning:
 ```env
 OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4o
+OPENAI_MODEL=gpt-4.1-mini
 FLOWOS_WS_PORT=7331
 ```
+
+To keep speech transcription local:
+
+```bash
+brew install whisper-cpp ffmpeg
+```
+
+```env
+FLOWOS_WHISPER_BIN=/opt/homebrew/bin/whisper-cli
+FLOWOS_WHISPER_MODEL=/absolute/path/to/ggml-base.en.bin
+FLOWOS_WHISPER_THREADS=4
+FLOWOS_WHISPER_LANGUAGE=en
+FLOWOS_FFMPEG_BIN=ffmpeg
+```
+
+When both `FLOWOS_WHISPER_BIN` and `FLOWOS_WHISPER_MODEL` are set, recorded audio is processed locally and is not sent to the OpenAI transcription API.
 
 **3. Build the Swift helper**
 ```bash
@@ -112,7 +131,7 @@ npm run dev
 ```bash
 npm run dist:mac:arm64    # Apple Silicon
 npm run dist:mac:x64      # Intel
-npm run dist:mac          # both (universal)
+npm run dist:mac          # current host architecture
 ```
 
 Output lands in `release/`. Open the `.dmg`, drag FlowOS to Applications. First launch: right-click → Open to bypass the unverified developer warning (only needed once).
@@ -135,7 +154,7 @@ Align your displays on the same horizontal axis in **System Settings → Display
 ### Typecheck / test
 ```bash
 npm run typecheck        # full repo
-npm run test --workspace @flowos/electron   # 144 unit tests
+npm run test --workspace @flowos/electron   # 161 test cases in the current workspace
 ```
 
 ---
@@ -149,6 +168,7 @@ FlowOS/
 ├── renderer/          React + Vite UI — 340×420px frameless popover
 ├── swift-helper/      Native macOS binary — AXUIElement window control
 ├── extension-chrome/  Manifest V3 — tabs/groups via WebSocket
+├── extension-vscode/  VS Code extension — snapshots + command execution
 ├── shared/            TypeScript contracts shared across packages
 ├── db/                SQLite schema + query helpers (better-sqlite3)
 └── website/           Landing page (Astro + Tailwind)
@@ -157,48 +177,28 @@ FlowOS/
 **Data flow:**
 
 ```text
-                     🎙️ Speech In                🟢 Mode Button
-                          │                            │
-                          ▼                            │
-              MediaRecorder (renderer)                 │
-                          │                            │
-                          ▼                            │
-                OpenAI Whisper (STT)                   │
-                       whisper-1                       │
-                          │                            │
-                          └────────────┬───────────────┘
-                                       │
-                                       ▼
-                        ┌──────────────────────────────┐
-                        │       OpenAI Agent Loop      │
-                        │  GPT-4o · ≤20 iters          │
-                        │      function calling        │
-                        └──────────────┬───────────────┘
-                                       │
-       ┌────────────────┬──────────────┼──────────────┬──────────────┐
-       │                │              │              │              │
-   System          Chrome         Tracking       Tool calls       Tool calls
-   Snapshot        Snapshot       Summary
-   (apps/windows/  (tabs/windows/ (50-event       │              │
-    displays)       groups)       ring buffer)    ▼              ▼
-       ▲                ▲              ▲     Swift Native   Chrome Extension
-       │                │              │     Helper         (Manifest V3
-       │                │              │     (AX API,        + WebSocket)
-       │                │              │      AppKit,             │
-       │                │              │      CoreGraphics)       │
-       │                │              │           │              │
-       │                │              │           ▼              ▼
-       │                │              │   🖥️ Window         🌐 Tab
-       │                │              │      management        management
-       │                │              │   move · resize    focus · pin
-       │                │              │   raise · focus    open · group
-       │                │              │   minimize · hide  ungroup
-       │                │              │   per-display      (never close)
-       │                │              │   visible-rect
-       │                │              │   tiling
-       │                │              │
-       └─ live ─────────┴──── live ────┘
-          snapshots             native events
+Voice command
+    |
+    v
+MediaRecorder (WebM)
+    |
+    +--> ffmpeg + whisper.cpp (local STT, preferred when configured)
+    |
+    +--> OpenAI Whisper (fallback when local STT is not configured)
+    |
+    v
+OpenAI tool-calling agent (GPT-4.1-mini by default)
+    |
+    +--> live macOS snapshot and recent native events
+    +--> live Chrome tabs, windows, and groups
+    +--> live VS Code workspace, editor, terminal, and diagnostics state
+    |
+    v
+30 agent-callable tools
+    |
+    +--> Swift helper: move, resize, tile, focus, hide, and restore windows
+    +--> Chrome extension: focus, open, pin, group, and ungroup tabs
+    +--> VS Code extension: open, search, run, inspect, split, and focus
 ```
 
 All sessions, focus scores, spiral events, commitments, and morning plans are stored locally in SQLite at `~/Library/Application Support/FlowOS/flowos.db`.
@@ -218,14 +218,16 @@ All sessions, focus scores, spiral events, commitments, and morning plans are st
 ## Built With
 
 - **Electron 36** — main process, IPC via `contextBridge`, frameless transparent popover
-- **React 18 + Vite** — renderer UI
+- **React 19 + Vite** — renderer UI
 - **TypeScript strict** — everywhere
 - **Swift 5** — native helper using `AXUIElement`, `NSScreen`, CoreGraphics
 - **better-sqlite3** — local SQLite for all persistence
-- **OpenAI GPT-4o** — agent loop + night before scheduling
-- **OpenAI Whisper** — speech-to-text
+- **OpenAI GPT-4.1-mini** — default agent model, configurable through `OPENAI_MODEL`
+- **whisper.cpp + ffmpeg** — optional local speech-to-text pipeline
+- **OpenAI Whisper** — speech-to-text fallback when local STT is not configured
 - **Chrome Extension (Manifest V3)** — tabs, tabGroups, windows APIs
-- **WebSocket (`ws`)** — Electron ↔ extensions event bus
+- **VS Code Extension API** — workspace snapshots, diagnostics, editor, and terminal control
+- **WebSocket (`ws`)** — authenticated Electron ↔ extension event bus
 - **JSON-RPC over stdio** — Electron ↔ Swift helper
 - **Astro + Tailwind** — marketing website
 - **electron-builder** — macOS packaging + DMG
